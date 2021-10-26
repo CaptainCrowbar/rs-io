@@ -25,7 +25,8 @@ class ThreadPool: public Wait;
     bool ThreadPool::poll();
     size_t ThreadPool::threads() const noexcept;
     void ThreadPool::wait() noexcept;
-    template <typename R, typename P> bool ThreadPool::wait_for(std::chrono::duration<R, P> t) noexcept;
+    template <typename R, typename P>
+        bool ThreadPool::wait_for(std::chrono::duration<R, P> t) noexcept;
     bool ThreadPool::wait_until(clock::time_point t) noexcept;
 ```
 

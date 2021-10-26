@@ -213,9 +213,12 @@ class Dispatch;
         bool result::is_error() const noexcept;
     Dispatch::Dispatch();
     Dispatch::~Dispatch() noexcept;
-    template <typename T, typename F> void Dispatch::add(MessageChannel<T>& c, F f);
-    template <typename F> void Dispatch::add(MessageChannel<void>& c, F f);
-    template <typename F> void Dispatch::add(StreamChannel& c, F f);
+    template <typename T, typename F>
+        void Dispatch::add(MessageChannel<T>& c, F f);
+    template <typename F>
+        void Dispatch::add(MessageChannel<void>& c, F f);
+    template <typename F>
+        void Dispatch::add(StreamChannel& c, F f);
     bool Dispatch::empty() noexcept;
     Dispatch::result Dispatch::run() noexcept;
     void Dispatch::stop() noexcept;

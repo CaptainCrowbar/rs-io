@@ -129,7 +129,8 @@ class SocketAddress;
     static constexpr size_t SocketAddress::max_size = sizeof(sockaddr_in6);
     SocketAddress::SocketAddress() noexcept;
     SocketAddress::SocketAddress(IPv4 ip, uint16_t port = 0) noexcept;
-    SocketAddress::SocketAddress(IPv6 ip, uint16_t port = 0, uint32_t flow = 0, uint32_t scope = 0) noexcept;
+    SocketAddress::SocketAddress(IPv6 ip, uint16_t port = 0,
+        uint32_t flow = 0, uint32_t scope = 0) noexcept;
     SocketAddress::SocketAddress(const void* ptr, size_t n) noexcept;
     explicit SocketAddress::SocketAddress(const std::string& s);
     SocketAddress::~SocketAddress() noexcept;
@@ -195,9 +196,10 @@ constructor of the relevant type.
 
 ```c++
 class Dns;
-    static SocketAddress Dns::host_to_ip(const std::string& name, int family = 0);
-    static std::vector<SocketAddress> Dns::host_to_ips(const std::string& name, int family = 0);
-    static std::string Dns::ip_to_host(const SocketAddress& addr);
+    SocketAddress Dns::host_to_ip(const std::string& name, int family = 0);
+    std::vector<SocketAddress> Dns::host_to_ips(const std::string& name,
+        int family = 0);
+    std::string Dns::ip_to_host(const SocketAddress& addr);
 ```
 
 The `Dns` class only exists to act as a wrapper for the DNS resolution
@@ -234,7 +236,8 @@ class Socket: public StreamChannel;
     bool Socket::write(std::string_view s);
     bool Socket::write(const void* src, size_t len);
     bool Socket::write_to(std::string_view s, const SocketAddress& to);
-    bool Socket::write_to(const void* src, size_t len, const SocketAddress& to);
+    bool Socket::write_to(const void* src, size_t len,
+        const SocketAddress& to);
 ```
 
 This is a wrapper around the native socket handle type. The constructor can
@@ -259,8 +262,10 @@ Any function that implicitly calls a native socket API function will throw
 class TcpClient: public Socket;
     TcpClient::TcpClient() noexcept;
     explicit TcpClient::TcpClient(NativeSocket s) noexcept;
-    explicit TcpClient::TcpClient(const SocketAddress& remote, const SocketAddress& local = {});
-    template <typename... Args> explicit TcpClient::TcpClient(const Args&... args);
+    explicit TcpClient::TcpClient(const SocketAddress& remote,
+        const SocketAddress& local = {});
+    template <typename... Args>
+        explicit TcpClient::TcpClient(const Args&... args);
     virtual TcpClient::~TcpClient() noexcept;
     void TcpClient::set_nagle(bool flag);
 ```
@@ -283,7 +288,8 @@ class TcpServer: public MessageChannel<std::unique_ptr<TcpClient>>;
     TcpServer::TcpServer() noexcept;
     explicit TcpServer::TcpServer(NativeSocket s) noexcept;
     explicit TcpServer::TcpServer(const SocketAddress& local);
-    template <typename... Args> explicit TcpServer::TcpServer(const Args&... args);
+    template <typename... Args>
+        explicit TcpServer::TcpServer(const Args&... args);
     virtual TcpServer::~TcpServer() noexcept;
     SocketAddress TcpServer::local() const;
     NativeSocket TcpServer::native() const noexcept;
@@ -306,8 +312,10 @@ Any function that implicitly calls a native socket API function will throw
 class UdpClient: public Socket;
     UdpClient::UdpClient() noexcept;
     explicit UdpClient::UdpClient(NativeSocket s) noexcept;
-    explicit UdpClient::UdpClient(const SocketAddress& remote, const SocketAddress& local = {});
-    template <typename... Args> explicit UdpClient::UdpClient(const Args&... args);
+    explicit UdpClient::UdpClient(const SocketAddress& remote,
+        const SocketAddress& local = {});
+    template <typename... Args>
+        explicit UdpClient::UdpClient(const Args&... args);
     virtual UdpClient::~UdpClient() noexcept;
 ```
 
