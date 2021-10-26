@@ -1,0 +1,414 @@
+#pragma once
+
+#include <chrono>
+#include <condition_variable>
+#include <deque>
+#include <exception>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <type_traits>
+#include <utility>
+
+namespace RS::Channel {
+
+    // Implementation details
+
+    namespace Detail {
+
+        class ScopeGuard {
+        public:
+            template <typename F> explicit ScopeGuard(F callback)
+                { try { call_ = callback; } catch (...) { callback(); throw; } }
+            ~ScopeGuard() noexcept { if (call_) { try { call_(); } catch (...) {} } }
+            ScopeGuard(const ScopeGuard&) = delete;
+            ScopeGuard(ScopeGuard&&) = delete;
+            ScopeGuard& operator=(const ScopeGuard&) = delete;
+            ScopeGuard& operator=(ScopeGuard&&) = delete;
+            void release() noexcept { call_ = nullptr; }
+        private:
+            std::function<void()> call_;
+        };
+
+    }
+
+    // Forward declarations
+
+    class BufferChannel;
+    class Channel;
+    class Dispatch;
+    template <typename T> class GeneratorChannel;
+    template <typename T> class MessageChannel;
+    template <typename T> class QueueChannel;
+    class StreamChannel;
+    class TimerChannel;
+    template <typename T> class ValueChannel;
+
+    // Channel base class
+
+    class Channel {
+    public:
+        using clock = std::chrono::system_clock;
+        using duration = clock::duration;
+        using time_point = clock::time_point;
+        virtual ~Channel() noexcept;
+        Channel(const Channel&) = delete;
+        Channel(Channel&& c) = delete;
+        Channel& operator=(const Channel&) = delete;
+        Channel& operator=(Channel&& c) = delete;
+        virtual void close() noexcept = 0;
+        virtual bool is_closed() const noexcept = 0;
+        virtual bool is_synchronous() const noexcept { return false; }
+        virtual bool poll() { return wait_for({}); }
+        virtual void wait() { while (! wait_for(std::chrono::seconds(1))) {} }
+        virtual bool wait_for(duration t) { return wait_until(clock::now() + t); }
+        virtual bool wait_until(time_point t) { return wait_for(t - clock::now()); }
+    protected:
+        Channel() = default;
+    private:
+        friend class Dispatch;
+        Dispatch* dispatch_ = nullptr;
+    };
+
+    // Intermediate base classes
+
+    template <typename T>
+    class MessageChannel:
+    public Channel {
+    public:
+        using value_type = T;
+        virtual bool read(T& t) = 0;
+        std::optional<T> read_maybe() { T t; if (read(t)) return t; else return {}; }
+    protected:
+        MessageChannel() = default;
+    };
+
+    template <>
+    class MessageChannel<void>:
+    public Channel {
+    public:
+        using value_type = void;
+    protected:
+        MessageChannel() = default;
+    };
+
+    class StreamChannel:
+    public Channel {
+    public:
+        static constexpr size_t default_block_size = 65536;
+        virtual size_t read(void* dst, size_t maxlen) = 0;
+        size_t append(std::string& dst);
+        size_t block_size() const noexcept { return block_; }
+        std::string read_all();
+        void set_block_size(size_t n) noexcept { block_ = n; }
+    protected:
+        StreamChannel() = default;
+    private:
+        size_t block_ = default_block_size;
+    };
+
+    // Concrete channel classes
+
+    class TimerChannel:
+    public MessageChannel<void> {
+    public:
+        explicit TimerChannel(Channel::duration t) noexcept;
+        TimerChannel(const TimerChannel&) = delete;
+        TimerChannel(TimerChannel&&) = delete;
+        TimerChannel& operator=(const TimerChannel&) = delete;
+        TimerChannel& operator=(TimerChannel&&) = delete;
+        void close() noexcept override;
+        bool is_closed() const noexcept override { return ! open_; }
+        bool wait_for(duration t) override;
+        void flush() noexcept;
+        duration interval() const noexcept { return delta_; }
+        auto next() const noexcept { return next_tick_; }
+    private:
+        mutable std::mutex mutex_;
+        std::condition_variable cv_;
+        time_point next_tick_;
+        duration delta_;
+        bool open_ = true;
+    };
+
+    template <typename T>
+    class GeneratorChannel:
+    public MessageChannel<T> {
+    public:
+        using generator = std::function<T()>;
+        template <typename F> explicit GeneratorChannel(F f): mutex_(), gen_(f) {}
+        GeneratorChannel(const GeneratorChannel&) = delete;
+        GeneratorChannel(GeneratorChannel&&) = delete;
+        GeneratorChannel& operator=(const GeneratorChannel&) = delete;
+        GeneratorChannel& operator=(GeneratorChannel&&) = delete;
+        void close() noexcept override;
+        bool is_closed() const noexcept override { return ! gen_; }
+        bool read(T& t) override;
+        bool wait_for(Channel::duration /*t*/) override { return true; }
+    private:
+        std::mutex mutex_;
+        generator gen_;
+    };
+
+        template <typename T>
+        void GeneratorChannel<T>::close() noexcept {
+            std::unique_lock lock(mutex_);
+            gen_ = nullptr;
+        }
+
+        template <typename T>
+        bool GeneratorChannel<T>::read(T& t) {
+            std::unique_lock lock(mutex_);
+            if (gen_)
+                t = gen_();
+            return bool(gen_);
+        }
+
+    template <typename T>
+    class QueueChannel:
+    public MessageChannel<T> {
+    public:
+        QueueChannel() = default;
+        QueueChannel(const QueueChannel&) = delete;
+        QueueChannel(QueueChannel&&) = delete;
+        QueueChannel& operator=(const QueueChannel&) = delete;
+        QueueChannel& operator=(QueueChannel&&) = delete;
+        void close() noexcept override;
+        bool is_closed() const noexcept override { return ! open_; }
+        bool read(T& t) override;
+        bool wait_for(Channel::duration t) override;
+        void clear() noexcept;
+        bool write(const T& t);
+        bool write(T&& t);
+    private:
+        std::mutex mutex_;
+        std::condition_variable cv_;
+        bool open_ = true;
+        std::deque<T> queue_;
+    };
+
+        template <typename T>
+        void QueueChannel<T>::close() noexcept {
+            std::unique_lock lock(mutex_);
+            open_ = false;
+            cv_.notify_all();
+        }
+
+        template <typename T>
+        bool QueueChannel<T>::read(T& t) {
+            std::unique_lock lock(mutex_);
+            if (! open_ || queue_.empty())
+                return false;
+            t = queue_.front();
+            queue_.pop_front();
+            if (! queue_.empty())
+                cv_.notify_all();
+            return true;
+        }
+
+        template <typename T>
+        bool QueueChannel<T>::wait_for(Channel::duration t) {
+            std::unique_lock lock(mutex_);
+            if (open_ && queue_.empty() && t > Channel::duration())
+                cv_.wait_for(lock, t, [&] { return ! open_ || ! queue_.empty(); });
+            return ! open_ || ! queue_.empty();
+        }
+
+        template <typename T>
+        void QueueChannel<T>::clear() noexcept {
+            std::unique_lock lock(mutex_);
+            queue_.clear();
+        }
+
+        template <typename T>
+        bool QueueChannel<T>::write(const T& t) {
+            std::unique_lock lock(mutex_);
+            if (! open_)
+                return false;
+            queue_.push_back(t);
+            cv_.notify_all();
+            return true;
+        }
+
+        template <typename T>
+        bool QueueChannel<T>::write(T&& t) {
+            std::unique_lock lock(mutex_);
+            if (! open_)
+                return false;
+            queue_.push_back(std::move(t));
+            cv_.notify_all();
+            return true;
+        }
+
+    template <typename T>
+    class ValueChannel:
+    public MessageChannel<T> {
+    public:
+        ValueChannel() = default;
+        explicit ValueChannel(const T& t): value_(t) {}
+        ValueChannel(const ValueChannel&) = delete;
+        ValueChannel(ValueChannel&&) = delete;
+        ValueChannel& operator=(const ValueChannel&) = delete;
+        ValueChannel& operator=(ValueChannel&&) = delete;
+        void close() noexcept override;
+        bool is_closed() const noexcept override { return status == -1; }
+        bool read(T& t) override;
+        bool wait_for(Channel::duration t) override;
+        void clear() noexcept;
+        bool write(const T& t);
+        bool write(T&& t);
+    private:
+        std::mutex mutex_;
+        std::condition_variable cv_;
+        T value_;
+        int status = 0; // +1 = new value, 0 = no change, -1 = closed
+    };
+
+        template <typename T>
+        void ValueChannel<T>::close() noexcept {
+            std::unique_lock lock(mutex_);
+            status = -1;
+            cv_.notify_all();
+        }
+
+        template <typename T>
+        bool ValueChannel<T>::read(T& t) {
+            std::unique_lock lock(mutex_);
+            if (status != 1)
+                return false;
+            t = value_;
+            status = 0;
+            return true;
+        }
+
+        template <typename T>
+        bool ValueChannel<T>::wait_for(Channel::duration t) {
+            std::unique_lock lock(mutex_);
+            if (status == 0 && t > Channel::duration())
+                cv_.wait_for(lock, t, [&] { return status != 0; });
+            return status;
+        }
+
+        template <typename T>
+        bool ValueChannel<T>::write(const T& t) {
+            std::unique_lock lock(mutex_);
+            if (status == -1)
+                return false;
+            if (t == value_)
+                return true;
+            value_ = t;
+            status = 1;
+            cv_.notify_all();
+            return true;
+        }
+
+        template <typename T>
+        bool ValueChannel<T>::write(T&& t) {
+            std::unique_lock lock(mutex_);
+            if (status == -1)
+                return false;
+            if (t == value_)
+                return true;
+            value_ = std::move(t);
+            status = 1;
+            cv_.notify_all();
+            return true;
+        }
+
+    class BufferChannel:
+    public StreamChannel {
+    public:
+        BufferChannel() = default;
+        BufferChannel(const BufferChannel&) = delete;
+        BufferChannel(BufferChannel&&) = delete;
+        BufferChannel& operator=(const BufferChannel&) = delete;
+        BufferChannel& operator=(BufferChannel&&) = delete;
+        void close() noexcept override;
+        bool is_closed() const noexcept override { return ! open_; }
+        size_t read(void* dst, size_t maxlen) override;
+        bool wait_for(duration t) override;
+        void clear() noexcept;
+        bool write(std::string_view src) { return write(src.data(), src.size()); }
+        bool write(const void* src, size_t len);
+    private:
+        std::mutex mutex_;
+        std::condition_variable cv_;
+        std::string buf_;
+        size_t ofs_ = 0;
+        bool open_ = true;
+    };
+
+    // Dispatch controller class
+
+    class Dispatch {
+    public:
+        struct result {
+            Channel* channel = nullptr;
+            std::exception_ptr error;
+            bool is_closed() const noexcept { return channel && ! error; }
+            bool is_empty() const noexcept { return ! channel; }
+            bool is_error() const noexcept { return bool(error); }
+        };
+        Dispatch() = default;
+        ~Dispatch() noexcept;
+        Dispatch(const Dispatch&) = delete;
+        Dispatch(Dispatch&&) = delete;
+        Dispatch& operator=(const Dispatch&) = delete;
+        Dispatch& operator=(Dispatch&&) = delete;
+        template <typename T, typename F> void add(MessageChannel<T>& c, F f);
+        template <typename F> void add(MessageChannel<void>& c, F f);
+        template <typename F> void add(StreamChannel& c, F f);
+        bool empty() noexcept { return tasks_.empty(); }
+        result run() noexcept;
+        void stop() noexcept;
+    private:
+        friend class Channel;
+        struct task_info {
+            std::thread thread;
+            std::function<void()> handler;
+            ~task_info() noexcept { try { if (thread.joinable()) thread.join(); } catch (...) {} }
+        };
+        std::map<Channel*, std::unique_ptr<task_info>> tasks_;
+        std::deque<result> faults_;
+        std::mutex faults_mutex_;
+        void add_channel(Channel& c, std::function<void()> f);
+        void drop_channel(Channel& c) noexcept;
+        void set_fault(Channel& c, std::exception_ptr e = {});
+        template <typename Arg, typename F> static void check_call(F& f);
+    };
+
+        template <typename T, typename F>
+        void Dispatch::add(MessageChannel<T>& c, F f) {
+            check_call<const T&>(f);
+            add_channel(c, [&c,f,t=T()] () mutable { if (c.read(t)) f(t); });
+        }
+
+        template <typename F>
+        void Dispatch::add(MessageChannel<void>& c, F f) {
+            check_call<void>(f);
+            add_channel(c, f);
+        }
+
+        template <typename F>
+        void Dispatch::add(StreamChannel& c, F f) {
+            check_call<std::string&>(f);
+            add_channel(c, [&c,f,s=std::string()] () mutable { if (c.append(s)) f(s); });
+        }
+
+        template <typename Arg, typename F>
+        void Dispatch::check_call(F& f) {
+            if constexpr (std::is_void_v<Arg>)
+                static_assert(std::is_convertible_v<F, std::function<void()>>, "Invalid callback type");
+            else
+                static_assert(std::is_convertible_v<F, std::function<void(Arg)>>, "Invalid callback type");
+            if constexpr (std::is_constructible_v<bool, F>)
+                if (! bool(f))
+                    throw std::bad_function_call();
+        }
+
+}
