@@ -21,8 +21,11 @@ add_library(rs-channel STATIC
 
 add_executable(channel-test
     test/thread-pool-test.cpp
-    test/channel-test.cpp
-    test/net-test.cpp
+    test/channel-classes-test.cpp
+    test/channel-dispatch-test.cpp
+    test/net-address-test.cpp
+    test/net-dns-test.cpp
+    test/net-tcp-test.cpp
     test/process-test.cpp
     test/signal-test.cpp
     test/unit-test.cpp

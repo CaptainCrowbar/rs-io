@@ -8,12 +8,14 @@ int main(int argc, char** argv) {
     UNIT_TEST(channel_thread_pool_class)
     UNIT_TEST(channel_thread_pool_timing)
 
-    // channel-test.cpp
+    // channel-classes-test.cpp
     UNIT_TEST(channel_generator)
     UNIT_TEST(channel_buffer)
     UNIT_TEST(channel_queue)
     UNIT_TEST(channel_value)
     UNIT_TEST(channel_timer)
+
+    // channel-dispatch-test.cpp
     UNIT_TEST(channel_dispatch_empty)
     UNIT_TEST(channel_dispatch_sync_close)
     UNIT_TEST(channel_dispatch_async_close)
@@ -26,12 +28,16 @@ int main(int argc, char** argv) {
     UNIT_TEST(channel_dispatch_async_message_channel)
     UNIT_TEST(channel_dispatch_async_stream_channel)
 
-    // net-test.cpp
+    // net-address-test.cpp
     UNIT_TEST(channel_net_ipv4)
     UNIT_TEST(channel_net_ipv6)
     UNIT_TEST(channel_net_socket_address)
     UNIT_TEST(channel_net_ip_literals)
+
+    // net-dns-test.cpp
     UNIT_TEST(channel_net_dns_query)
+
+    // net-tcp-test.cpp
     UNIT_TEST(channel_net_tcp_client_server)
     UNIT_TEST(channel_net_socket_set)
 
