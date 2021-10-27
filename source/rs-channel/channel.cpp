@@ -38,7 +38,8 @@ namespace RS::Channel {
 
     // Class TimerChannel
 
-    TimerChannel::TimerChannel(Channel::duration t) noexcept {
+    TimerChannel::TimerChannel(Channel::duration t, size_t count) noexcept {
+        count_ = count;
         delta_ = std::max(duration_cast<Channel::duration>(t), Channel::duration());
         next_tick_ = clock::now() + delta_;
     }
@@ -55,7 +56,7 @@ namespace RS::Channel {
             return true;
         auto now = clock::now();
         if (next_tick_ <= now) {
-            next_tick_ += delta_;
+            step();
             return true;
         }
         if (t <= duration())
@@ -67,7 +68,7 @@ namespace RS::Channel {
         }
         cv_.wait_for(lock, remaining, [&] { return ! open_; });
         if (open_)
-            next_tick_ += delta_;
+            step();
         return true;
     }
 
@@ -78,8 +79,18 @@ namespace RS::Channel {
         auto now = clock::now();
         if (now < next_tick_)
             return;
-        auto skip = (now - next_tick_).count() / delta_.count();
-        next_tick_ += delta_ * (skip + 1);
+        auto skip = size_t((now - next_tick_).count() / delta_.count()) + 1;
+        step(skip);
+    }
+
+    void TimerChannel::step(size_t n) {
+        n = std::min(n, count_);
+        count_ -= n;
+        next_tick_ += n * delta_;
+        if (count_ == 0) {
+            open_ = false;
+            cv_.notify_all();
+        }
     }
 
     // Class BufferChannel

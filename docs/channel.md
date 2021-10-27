@@ -31,6 +31,7 @@ class Channel;
     using Channel::clock = std::chrono::system_clock;
     using Channel::duration = clock::duration;
     using Channel::time_point = clock::time_point;
+    static constexpr size_t Channel::npos = std::string::npos;
     virtual Channel::~Channel() noexcept;
     virtual void Channel::close() noexcept = 0;
     virtual bool Channel::is_closed() const noexcept = 0;
@@ -130,7 +131,8 @@ again here unless they have significantly different semantics.
 
 ```c++
 class TimerChannel: public MessageChannel<void>;
-    explicit TimerChannel::TimerChannel(Channel::duration t) noexcept;
+    explicit TimerChannel::TimerChannel(Channel::duration t,
+        size_t count = npos) noexcept;
     void TimerChannel::flush() noexcept;
     Channel::duration TimerChannel::interval() const noexcept;
     auto TimerChannel::next() const noexcept;
@@ -140,6 +142,9 @@ A channel that delivers one tick every interval, starting at one interval
 after the time of construction. Multiple ticks may be delivered at once
 (represented by repeated calls to wait functions returning success
 immediately) if multiple intervals have elapsed since the last check.
+Optionally a limited number of ticks can be specified in the constructor; the
+channel will automatically close itself after the specified number of ticks
+have been delivered.
 
 The `next()` function returns the time of the next tick (this may be in the
 past if multiple ticks are pending); `flush()` discards any pending ticks.

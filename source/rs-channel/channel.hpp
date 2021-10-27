@@ -56,6 +56,7 @@ namespace RS::Channel {
         using clock = std::chrono::system_clock;
         using duration = clock::duration;
         using time_point = clock::time_point;
+        static constexpr size_t npos = std::string::npos;
         virtual ~Channel() noexcept;
         Channel(const Channel&) = delete;
         Channel(Channel&& c) = delete;
@@ -117,7 +118,7 @@ namespace RS::Channel {
     class TimerChannel:
     public MessageChannel<void> {
     public:
-        explicit TimerChannel(Channel::duration t) noexcept;
+        explicit TimerChannel(Channel::duration t, size_t count = npos) noexcept;
         TimerChannel(const TimerChannel&) = delete;
         TimerChannel(TimerChannel&&) = delete;
         TimerChannel& operator=(const TimerChannel&) = delete;
@@ -132,8 +133,10 @@ namespace RS::Channel {
         mutable std::mutex mutex_;
         std::condition_variable cv_;
         time_point next_tick_;
+        size_t count_;
         duration delta_;
         bool open_ = true;
+        void step(size_t n = 1);
     };
 
     template <typename T>

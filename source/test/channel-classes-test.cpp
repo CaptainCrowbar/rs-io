@@ -164,4 +164,10 @@ void test_channel_timer() {
     TEST(chan.wait_for(10ms));
     TEST(chan.is_closed());
 
+    TimerChannel chan1(25ms, 1);
+
+    TEST(! chan1.wait_for(1ms));
+    TEST(chan1.wait_for(100ms));
+    TEST(chan1.is_closed());
+
 }
