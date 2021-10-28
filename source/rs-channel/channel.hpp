@@ -70,7 +70,13 @@ namespace RS::Channel {
         virtual bool wait_for(duration t) { return wait_until(clock::now() + t); }
         virtual bool wait_until(time_point t) { return wait_for(t - clock::now()); }
     protected:
+        #ifdef _XOPEN_SOURCE
+            using native_handle = int; // file handle
+        #else
+            using native_handle = void*; // HANDLE
+        #endif
         Channel() = default;
+        virtual native_handle get_handle() const noexcept { return {}; }
     private:
         friend class Dispatch;
         Dispatch* dispatch_ = nullptr;

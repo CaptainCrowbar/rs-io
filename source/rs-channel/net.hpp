@@ -220,6 +220,7 @@ namespace RS::Channel {
         bool write_to(std::string_view s, const SocketAddress& to) { return do_write(s.data(), s.size(), &to); }
         bool write_to(const void* src, size_t len, const SocketAddress& to) { return do_write(src, len, &to); }
     protected:
+        native_handle get_handle() const noexcept override { return reinterpret_cast<native_handle>(sock_); }
         void do_close() noexcept;
     private:
         NativeSocket sock_ = no_socket;
