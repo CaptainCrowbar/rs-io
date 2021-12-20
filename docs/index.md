@@ -2,7 +2,8 @@
 
 By Ross Smith
 
-[Documentation](https://captaincrowbar.github.io/rs-channel/)
+_[GitHub repository](https://github.com/CaptainCrowbar/rs-channel)_
+_[Documentation](https://captaincrowbar.github.io/rs-channel/)_
 
 ## Index
 

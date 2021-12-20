@@ -2,31 +2,46 @@
 
 set -euo pipefail
 
-dir="${PWD##*/}"
-dir="${dir%%-*}"
-if [ "$dir" == build ]; then cd ..; fi
-
-header=$(find source -name unit-test.hpp)
-if [ "$header" ]; then
-    header=${header#source/}
-else
-    header=rs-maker/unit-test.hpp
+if [[ "${PWD##*/}" =~ build ]]; then
+    cd ..
 fi
 
-project="${PWD##*/}"
-project="${project%-lib}"
-project="$(tr A-Z a-z <<< "$project")"
+main=$(find . -name unit-test.cpp)
 
-make=source/CMakeLists.txt
-main=source/test/unit-test.cpp
-temp=source/test/unit-test.temp.cpp
+if ! [ "$main" ]; then
 
-testfiles=$(grep -E '^ +test/.*\btest\b.*\.cpp$' "$make" \
+    srcdir=.
+
+    for s in source src; do
+        if [ -d "$s" ]; then
+            srcdir="$s"
+            break
+        fi
+    done
+
+    if [ -d "$srcdir/test" ]; then
+        srcdir="$srcdir/test"
+    fi
+
+    main="$srcdir/unit-test.cpp"
+
+fi
+
+testdir="${main%/*}"
+temp="${main%.cpp}.temp.cpp"
+cmake=$(find . -name CMakeLists.txt)
+
+if ! [ "$cmake" ]; then
+    echo "*** CMakeLists.txt not found"
+    exit 1
+fi
+
+testfiles=$(grep -E '[-]test\.cpp$' "$cmake" \
     | sed -E 's!^ +!source/!' \
     | grep -Fv "$main")
 
 cat > $temp << EOF
-#include "$header"
+#include "rs-unit-test.hpp"
 
 int main(int argc, char** argv) {
 

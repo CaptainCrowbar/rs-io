@@ -1,7 +1,9 @@
 # Message Dispatch
 
+_[Channel Library by Ross Smith](index.html)_
+
 ```c++
-#include "rs-core/channel.hpp"
+#include "rs-channel/channel.hpp"
 namespace RS::Channel;
 ```
 

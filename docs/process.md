@@ -1,7 +1,9 @@
 # Process Control
 
+_[Channel Library by Ross Smith](index.html)_
+
 ```c++
-#include "rs-core/process.hpp"
+#include "rs-channel/process.hpp"
 namespace RS::Channel;
 ```
 

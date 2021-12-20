@@ -1,6 +1,6 @@
 #include "rs-channel/signal.hpp"
 #include "rs-channel/channel.hpp"
-#include "test/unit-test.hpp"
+#include "rs-unit-test.hpp"
 #include <chrono>
 #include <csignal>
 #include <vector>

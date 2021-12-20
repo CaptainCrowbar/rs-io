@@ -1,7 +1,9 @@
 # Thread Pool
 
+_[Channel Library by Ross Smith](index.html)_
+
 ```c++
-#include "rs-core/thread-pool.hpp"
+#include "rs-channel/thread-pool.hpp"
 namespace RS::Channel;
 ```
 

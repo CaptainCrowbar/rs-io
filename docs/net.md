@@ -1,7 +1,9 @@
 # TCP/IP Networking
 
+_[Channel Library by Ross Smith](index.html)_
+
 ```c++
-* include "rs-core/net.hpp"
+#include "rs-channel/net.hpp"
 namespace RS::Channel;
 ```
 

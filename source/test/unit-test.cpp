@@ -1,4 +1,4 @@
-#include "test/unit-test.hpp"
+#include "rs-unit-test.hpp"
 
 int main(int argc, char** argv) {
 
@@ -49,6 +49,8 @@ int main(int argc, char** argv) {
     // signal-test.cpp
     UNIT_TEST(channel_signal_channel)
     UNIT_TEST(channel_signal_name)
+
+    // unit-test.cpp
 
     return RS::UnitTest::end_tests();
 

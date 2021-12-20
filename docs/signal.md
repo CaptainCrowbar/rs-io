@@ -1,7 +1,9 @@
 # Signal Handling
 
+_[Channel Library by Ross Smith](index.html)_
+
 ```c++
-#include "rs-core/signal.hpp"
+#include "rs-channel/signal.hpp"
 namespace RS::Channel;
 ```
 
