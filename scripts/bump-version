@@ -43,7 +43,7 @@ if [ "$minor_version_etc" != "$version" ]; then
     fi
 fi
 
-namespace=$(grep -EIhr '^ *namespace [^ ]+' . \
+namespace=$(grep -EIhr '^ *namespace [^ {}]+' . \
     | sed -E 's/^ *namespace ([^ ]+).*$/\1/' \
     | sort \
     | uniq -c \
