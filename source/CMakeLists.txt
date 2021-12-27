@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 # version to version.hpp.
 
 project(rs-channel
-    VERSION 0.1.5
+    VERSION 0.1.6
     LANGUAGES CXX
 )
 
@@ -53,6 +53,7 @@ include_directories(.)
 find_package(Threads REQUIRED)
 
 add_library(${library} STATIC
+    ${library}/time.cpp
     ${library}/channel.cpp
     ${library}/net.cpp
     ${library}/process.cpp
@@ -62,6 +63,7 @@ add_library(${library} STATIC
 )
 
 add_executable(${unittest}
+    test/time-test.cpp
     test/channel-classes-test.cpp
     test/channel-dispatch-test.cpp
     test/net-address-test.cpp

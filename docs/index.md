@@ -26,7 +26,7 @@ tests.
 
 ## Index
 
-* [Timed-wait base class](waiter.html)
+* [Time utilities](time.html)
 * [Channel-based message dispatch](channel.html)
 * [TCP/IP networking](net.html)
 * [Process control](process.html)

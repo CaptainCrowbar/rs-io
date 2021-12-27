@@ -1,4 +1,5 @@
 #include "rs-channel/named-mutex.hpp"
+#include "rs-channel/time.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <ctime>
@@ -96,9 +97,7 @@ namespace RS::Channel {
         #else
 
             bool NamedMutex::try_lock_until(system_clock::time_point abs_time) {
-                static constexpr int64_t G = 1'000'000'000ll;
-                int64_t ns = duration_cast<nanoseconds>(abs_time.from_epoch()).count();
-                std::timespec ts = {time_t(ns / G), long(ns % G)};
+                auto ts = duration_to_timespec(abs_time.from_epoch());
                 errno = 0;
                 int rc = sem_timedwait(SemPtr(handle_), &ts);
                 int err = errno;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rs-channel/waiter.hpp"
+#include "rs-channel/time.hpp"
 #include <chrono>
 #include <condition_variable>
 #include <deque>

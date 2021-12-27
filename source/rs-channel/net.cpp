@@ -123,20 +123,6 @@ namespace RS::Channel {
             net_call(::setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &mode, sizeof(mode))).fail_if(-1, "setsockopt()");
         }
 
-        template <typename R, typename P>
-        timeval duration_to_timeval(const duration<R, P>& d) noexcept {
-            #ifdef _XOPEN_SOURCE
-                using sec_type = time_t;
-                using usec_type = suseconds_t;
-            #else
-                using sec_type = long;
-                using usec_type = long;
-            #endif
-            static constexpr int64_t M = 1'000'000ull;
-            int64_t usec = duration_cast<microseconds>(d).count();
-            return {sec_type(usec / M), usec_type(usec % M)};
-        }
-
         std::string hex_bytes(const void* ptr, size_t len) {
             static constexpr const char* xdigits = "0123456789abcdef";
             std::string s(2 * len, '\0');
@@ -726,7 +712,7 @@ namespace RS::Channel {
         fd_set efds = rfds;
         timeval tv = {0, 0};
         if (t > duration())
-            tv = duration_to_timeval(t);
+            duration_to_timeval(t, tv);
         clear_error();
         auto rc = net_call(::select(last + 1, &rfds, nullptr, &efds, &tv));
         if (rc.res == 0)

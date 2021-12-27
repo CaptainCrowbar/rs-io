@@ -22,28 +22,16 @@ namespace RS::Channel {
 
     namespace {
 
-        template <typename R, typename P>
-        timeval duration_to_timeval(const duration<R, P>& d) noexcept {
-            #ifdef _XOPEN_SOURCE
-                using sec_type = time_t;
-                using usec_type = suseconds_t;
-            #else
-                using sec_type = long;
-                using usec_type = long;
-            #endif
-            static constexpr int64_t M = 1'000'000ull;
-            int64_t usec = duration_cast<microseconds>(d).count();
-            return {sec_type(usec / M), usec_type(usec % M)};
-        }
-
         #ifndef _XOPEN_SOURCE
 
             std::wstring to_wstring(const std::string& utf8) {
-                int len = MultiByteToWideChar(CP_UTF8, 0, utf8.data(), int(utf8.size()), nullptr, 0);
-                std::wstring utf16(len, 0);
-                MultiByteToWideChar(CP_UTF8, 0, utf8.data(), int(utf8.size()), utf16.data(), len);
-                utf16.pop_back();
-                return utf16;
+                int rc = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), nullptr, 0);
+                auto err = GetLastError();
+                if (rc == 0)
+                    throw std::system_error(err, std::system_category(), utf8);
+                std::wstring wstr(rc, 0);
+                MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), wstr.data(), int(wstr.size()));
+                return wstr;
             }
 
         #endif
@@ -91,7 +79,8 @@ namespace RS::Channel {
             fd_set fds;
             FD_ZERO(&fds);
             FD_SET(fd, &fds);
-            auto tv = duration_to_timeval(t);
+            timeval tv;
+            duration_to_timeval(t, tv);
             errno = 0;
             int rc = ::select(fd + 1, &fds, nullptr, nullptr, &tv);
             int err = errno;

@@ -4,6 +4,10 @@ int main(int argc, char** argv) {
 
     RS::UnitTest::begin_tests(argc, argv);
 
+    // time-test.cpp
+    UNIT_TEST(channel_time_point_conversion)
+    UNIT_TEST(channel_time_system_specific_conversions)
+
     // channel-classes-test.cpp
     UNIT_TEST(channel_generator)
     UNIT_TEST(channel_buffer)
