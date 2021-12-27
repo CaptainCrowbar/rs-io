@@ -35,7 +35,8 @@ both of `poll()` or `wait()`, if a more efficient implementation is possible.
 ## Time conversion functions
 
 ```c++
-template <typename C1, typename D1, typename C2, typename D2> void convert_time_point(time_point<C1, D1> src, time_point<C2, D2>& dst);
+template <typename C1, typename D1, typename C2, typename D2>
+    void convert_time_point(time_point<C1, D1> src, time_point<C2, D2>& dst);
 ```
 
 Converts a time point from one representation to another, possibly on a
@@ -45,18 +46,28 @@ one clock to the other.
 
 ```c++
 // Unix
-void timepoint_to_timespec(const system_clock::time_point& tp, timespec& ts) noexcept;
-void timepoint_to_timeval(const system_clock::time_point& tp, timeval& tv) noexcept;
-void timespec_to_timepoint(const timespec& ts, system_clock::time_point& tp) noexcept;
-void timeval_to_timepoint(const timeval& tv, system_clock::time_point& tp) noexcept;
-template <typename R, typename P> void duration_to_timespec(const duration<R, P>& d, timespec& ts) noexcept;
-template <typename R, typename P> void duration_to_timeval(const duration<R, P>& d, timeval& tv) noexcept;
-template <typename R, typename P> void timespec_to_duration(const timespec& ts, duration<R, P>& d) noexcept;
-template <typename R, typename P> void timeval_to_duration(const timeval& tv, duration<R, P>& d) noexcept;
+void timepoint_to_timespec(const system_clock::time_point& tp,
+    timespec& ts) noexcept;
+void timepoint_to_timeval(const system_clock::time_point& tp,
+    timeval& tv) noexcept;
+void timespec_to_timepoint(const timespec& ts,
+    system_clock::time_point& tp) noexcept;
+void timeval_to_timepoint(const timeval& tv,
+    system_clock::time_point& tp) noexcept;
+template <typename R, typename P>
+    void duration_to_timespec(const duration<R, P>& d, timespec& ts) noexcept;
+template <typename R, typename P>
+    void duration_to_timeval(const duration<R, P>& d, timeval& tv) noexcept;
+template <typename R, typename P>
+    void timespec_to_duration(const timespec& ts, duration<R, P>& d) noexcept;
+template <typename R, typename P>
+    void timeval_to_duration(const timeval& tv, duration<R, P>& d) noexcept;
 
 // Windows
-void filetime_to_timepoint(const FILETIME& ft, system_clock::time_point& tp) noexcept;
-void timepoint_to_filetime(const system_clock::time_point& tp, FILETIME& ft) noexcept;
+void filetime_to_timepoint(const FILETIME& ft,
+    system_clock::time_point& tp) noexcept;
+void timepoint_to_filetime(const system_clock::time_point& tp,
+    FILETIME& ft) noexcept;
 ```
 
 Conversion functions between C++ chrono types and system API types. These
