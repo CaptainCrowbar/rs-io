@@ -15,7 +15,7 @@ namespace RS::Channel;
 ## Class hierarchy
 
 ```c++
-/*abstract*/ class Channel;
+/*abstract*/ class Channel: public Waiter;
     /*abstract*/ template <typename T> class MessageChannel: public Channel;
         template <typename T> class GeneratorChannel: public MessageChannel<T>;
         template <typename T> class QueueChannel: public MessageChannel<T>;
@@ -29,11 +29,10 @@ class Dispatch;
 ## Channel base class
 
 ```c++
-class Channel;
+class Channel: public Waiter;
     using Channel::clock = std::chrono::system_clock;
     using Channel::duration = clock::duration;
     using Channel::time_point = clock::time_point;
-    static constexpr size_t Channel::npos = std::string::npos;
     virtual Channel::~Channel() noexcept;
     virtual void Channel::close() noexcept = 0;
     virtual bool Channel::is_closed() const noexcept = 0;

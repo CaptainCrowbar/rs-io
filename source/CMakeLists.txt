@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 # version to version.hpp.
 
 project(rs-channel
-    VERSION 0.1.3
+    VERSION 0.1.5
     LANGUAGES CXX
 )
 
@@ -53,15 +53,15 @@ include_directories(.)
 find_package(Threads REQUIRED)
 
 add_library(${library} STATIC
-    ${library}/thread-pool.cpp
     ${library}/channel.cpp
     ${library}/net.cpp
     ${library}/process.cpp
     ${library}/signal.cpp
+    ${library}/named-mutex.cpp
+    ${library}/thread-pool.cpp
 )
 
 add_executable(${unittest}
-    test/thread-pool-test.cpp
     test/channel-classes-test.cpp
     test/channel-dispatch-test.cpp
     test/net-address-test.cpp
@@ -69,6 +69,8 @@ add_executable(${unittest}
     test/net-tcp-test.cpp
     test/process-test.cpp
     test/signal-test.cpp
+    test/named-mutex-test.cpp
+    test/thread-pool-test.cpp
     test/unit-test.cpp
 )
 

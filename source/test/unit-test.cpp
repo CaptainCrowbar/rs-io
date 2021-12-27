@@ -4,10 +4,6 @@ int main(int argc, char** argv) {
 
     RS::UnitTest::begin_tests(argc, argv);
 
-    // thread-pool-test.cpp
-    UNIT_TEST(channel_thread_pool_class)
-    UNIT_TEST(channel_thread_pool_timing)
-
     // channel-classes-test.cpp
     UNIT_TEST(channel_generator)
     UNIT_TEST(channel_buffer)
@@ -49,6 +45,13 @@ int main(int argc, char** argv) {
     // signal-test.cpp
     UNIT_TEST(channel_signal_channel)
     UNIT_TEST(channel_signal_name)
+
+    // named-mutex-test.cpp
+    UNIT_TEST(channel_named_mutex)
+
+    // thread-pool-test.cpp
+    UNIT_TEST(channel_thread_pool_class)
+    UNIT_TEST(channel_thread_pool_timing)
 
     // unit-test.cpp
 

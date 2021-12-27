@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rs-channel/waiter.hpp"
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -51,35 +52,41 @@ namespace RS::Channel {
 
     // Channel base class
 
-    class Channel {
+    class Channel:
+    public Waiter {
+
     public:
-        using clock = std::chrono::system_clock;
-        using duration = clock::duration;
-        using time_point = clock::time_point;
-        static constexpr size_t npos = std::string::npos;
-        virtual ~Channel() noexcept;
+
+        ~Channel() noexcept override;
         Channel(const Channel&) = delete;
         Channel(Channel&& c) = delete;
         Channel& operator=(const Channel&) = delete;
         Channel& operator=(Channel&& c) = delete;
+
         virtual void close() noexcept = 0;
         virtual bool is_closed() const noexcept = 0;
         virtual bool is_synchronous() const noexcept { return false; }
-        virtual bool poll() { return wait_for({}); }
-        virtual void wait() { while (! wait_for(std::chrono::seconds(1))) {} }
-        virtual bool wait_for(duration t) { return wait_until(clock::now() + t); }
-        virtual bool wait_until(time_point t) { return wait_for(t - clock::now()); }
+
     protected:
+
         #ifdef _XOPEN_SOURCE
             using native_handle = int; // file handle
         #else
             using native_handle = void*; // HANDLE
         #endif
+
+        static constexpr size_t npos = std::string::npos;
+
         Channel() = default;
+
         virtual native_handle get_handle() const noexcept { return {}; }
+
     private:
+
         friend class Dispatch;
+
         Dispatch* dispatch_ = nullptr;
+
     };
 
     // Intermediate base classes
@@ -355,7 +362,9 @@ namespace RS::Channel {
     // Dispatch controller class
 
     class Dispatch {
+
     public:
+
         struct result {
             Channel* channel = nullptr;
             std::exception_ptr error;
@@ -363,32 +372,41 @@ namespace RS::Channel {
             bool is_empty() const noexcept { return ! channel; }
             bool is_error() const noexcept { return bool(error); }
         };
+
         Dispatch() = default;
         ~Dispatch() noexcept;
         Dispatch(const Dispatch&) = delete;
         Dispatch(Dispatch&&) = delete;
         Dispatch& operator=(const Dispatch&) = delete;
         Dispatch& operator=(Dispatch&&) = delete;
+
         template <typename T, typename F> void add(MessageChannel<T>& c, F f);
         template <typename F> void add(MessageChannel<void>& c, F f);
         template <typename F> void add(StreamChannel& c, F f);
         bool empty() noexcept { return tasks_.empty(); }
         result run() noexcept;
         void stop() noexcept;
+
     private:
+
         friend class Channel;
+
         struct task_info {
             std::thread thread;
             std::function<void()> handler;
             ~task_info() noexcept { try { if (thread.joinable()) thread.join(); } catch (...) {} }
         };
+
         std::map<Channel*, std::unique_ptr<task_info>> tasks_;
         std::deque<result> faults_;
         std::mutex faults_mutex_;
+
         void add_channel(Channel& c, std::function<void()> f);
         void drop_channel(Channel& c) noexcept;
         void set_fault(Channel& c, std::exception_ptr e = {});
+
         template <typename Arg, typename F> static void check_call(F& f);
+
     };
 
         template <typename T, typename F>
