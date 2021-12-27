@@ -16,8 +16,9 @@ class NamedMutex: public Waiter;
     std::string NamedMutex::name() const;
     void NamedMutex::lock();
     bool NamedMutex::try_lock();
-    template <typename R, typename P> bool NamedMutex::try_lock_for(std::chrono::duration<R, P> rel_time);
-    bool NamedMutex::try_lock_until(std::chrono::system_clock::time_point abs_time);
+    template <typename R, typename P>
+        bool NamedMutex::try_lock_for(duration<R, P> rel_time);
+    bool NamedMutex::try_lock_until(system_clock::time_point abs_time);
     void NamedMutex::unlock() noexcept;
 ```
 
