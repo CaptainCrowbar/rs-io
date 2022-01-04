@@ -52,6 +52,8 @@ namespace RS::IO {
     class IoBase {
     public:
 
+        static constexpr size_t default_length = 65'536;
+
         virtual ~IoBase() noexcept {}
 
         virtual void close() = 0;
@@ -67,8 +69,8 @@ namespace RS::IO {
 
         Irange<LineIterator> lines() { return {LineIterator(*this), {}}; }
         std::string read_all();
-        size_t read_some(std::string& buf, size_t maxlen);
-        std::string reads(size_t maxlen = 1'048'576);
+        size_t read_some(std::string& buf, size_t maxlen = default_length);
+        std::string reads(size_t maxlen = default_length);
         void write_chars(size_t n, char c);
         void write_line(const std::string& str = {});
         size_t writes(const std::string& str);
@@ -166,7 +168,7 @@ namespace RS::IO {
         int release() noexcept { return fd_.release(); }
 
         static Fdio null();
-        static std::pair<Fdio, Fdio> pipe(size_t winmem = 65'536);
+        static std::pair<Fdio, Fdio> pipe(size_t winmem = default_length);
         static Fdio std_input() { return Fdio(0); }
         static Fdio std_output() { return Fdio(1); }
         static Fdio std_error() { return Fdio(2); }
