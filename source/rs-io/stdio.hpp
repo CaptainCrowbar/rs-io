@@ -2,6 +2,7 @@
 
 #include "rs-io/path.hpp"
 #include "rs-io/utility.hpp"
+#include "rs-format/format.hpp"
 #include "rs-format/string.hpp"
 #include <cstdio>
 #include <string>
@@ -61,10 +62,10 @@ namespace RS::IO {
         void check(const std::string& detail = "") const;
         void clear_error() noexcept { set_error(0); }
         std::error_code error() const noexcept { return status_; }
-        template <typename... Args> void format(const std::string& pattern, const Args&... args) { write_str(fmt(pattern, args...)); }
+        template <typename... Args> void format(const std::string& pattern, Args&&... args);
         Irange<line_iterator> lines() { return {line_iterator(*this), {}}; }
         bool ok() const noexcept { return ! status_ && is_open(); }
-        template <typename... Args> void print(const Args&... args);
+        template <typename... Args> void print(Args&&... args);
         std::string read_all();
         size_t read_n(std::string& s, size_t maxlen = 1024);
         std::string read_str(size_t maxlen);
@@ -92,9 +93,13 @@ namespace RS::IO {
     };
 
         template <typename... Args>
-        void IoBase::print(const Args&... args) {
-            std::vector<std::string> vec{to_str(args)...};
-            write_line(Format::join(vec, " "));
+        void IoBase::format(const std::string& pattern, Args&&... args) {
+            write_str(Format::format(pattern, std::forward<Args>(args)...));
+        }
+
+        template <typename... Args>
+        void IoBase::print(Args&&... args) {
+            write_line(Format::prints(std::forward<Args>(args)...));
         }
 
     // C standard I/O
@@ -133,7 +138,7 @@ namespace RS::IO {
         FILE* release() noexcept { return fp_.release(); }
         void ungetc(char c);
 
-        static Cstdio dev_null() noexcept;
+        static Cstdio null() noexcept;
         static Cstdio std_input() noexcept { return Cstdio(stdin); }
         static Cstdio std_output() noexcept { return Cstdio(stdout); }
         static Cstdio std_error() noexcept { return Cstdio(stderr); }
@@ -181,8 +186,8 @@ namespace RS::IO {
         int get() const noexcept { return fd_.get(); }
         int release() noexcept { return fd_.release(); }
 
-        static Fdio dev_null() noexcept;
-        static std::pair<Fdio, Fdio> pipe(size_t winmem = 1024);
+        static Fdio null() noexcept;
+        static std::pair<Fdio, Fdio> pipe(size_t winmem = 65'536);
         static Fdio std_input() noexcept { return Fdio(0); }
         static Fdio std_output() noexcept { return Fdio(1); }
         static Fdio std_error() noexcept { return Fdio(2); }
@@ -239,7 +244,7 @@ namespace RS::IO {
             void* get() const noexcept { return fh_.get(); }
             void* release() noexcept { return fh_.release(); }
 
-            static Winio dev_null() noexcept;
+            static Winio null() noexcept;
             static Winio std_input() noexcept { return Winio(GetStdHandle(STD_INPUT_HANDLE), false); }
             static Winio std_output() noexcept { return Winio(GetStdHandle(STD_OUTPUT_HANDLE), false); }
             static Winio std_error() noexcept { return Winio(GetStdHandle(STD_ERROR_HANDLE), false); }

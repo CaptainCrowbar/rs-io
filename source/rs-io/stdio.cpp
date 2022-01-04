@@ -341,7 +341,7 @@ namespace RS::IO {
         set_error(errno);
     }
 
-    Cstdio Cstdio::dev_null() noexcept {
+    Cstdio Cstdio::null() noexcept {
         Cstdio io(null_device, "r+");
         ::fgetc(io.fp_); // Clear bogus ioctl error
         return io;
@@ -469,7 +469,7 @@ namespace RS::IO {
         return Fdio(f);
     }
 
-    Fdio Fdio::dev_null() noexcept {
+    Fdio Fdio::null() noexcept {
         int iomode = O_RDWR;
         #ifdef O_CLOEXEC
             iomode |= O_CLOEXEC;
@@ -616,7 +616,7 @@ namespace RS::IO {
             return n;
         }
 
-        Winio Winio::dev_null() noexcept {
+        Winio Winio::null() noexcept {
             return Winio(null_device, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING);
         }
 
