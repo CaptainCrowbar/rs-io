@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 # and propagate the new version to version.hpp.
 
 project(rs-io
-    VERSION 0.2.1
+    VERSION 0.2.3
     LANGUAGES CXX
 )
 
@@ -54,6 +54,7 @@ find_package(Threads REQUIRED)
 
 add_library(${library} STATIC
     ${library}/time.cpp
+    ${library}/path.cpp
     ${library}/channel.cpp
     ${library}/net.cpp
     ${library}/process.cpp
@@ -64,6 +65,9 @@ add_library(${library} STATIC
 
 add_executable(${unittest}
     test/time-test.cpp
+    test/path-name-test.cpp
+    test/path-file-system-test.cpp
+    test/path-directory-test.cpp
     test/channel-classes-test.cpp
     test/channel-dispatch-test.cpp
     test/net-address-test.cpp

@@ -433,7 +433,7 @@ namespace RS::IO {
             std::memset(&hints, 0, sizeof(hints));
             hints.ai_family = family;
             addrinfo* info = nullptr;
-            Detail::ScopeGuard guard([&] { if (info) freeaddrinfo(info); });
+            ScopeGuard guard([&] { if (info) freeaddrinfo(info); });
             clear_error();
             int rc = getaddrinfo(name.data(), nullptr, &hints, &info);
             int err = get_error();
@@ -452,7 +452,7 @@ namespace RS::IO {
             std::memset(&hints, 0, sizeof(hints));
             hints.ai_family = family;
             addrinfo* info = nullptr;
-            Detail::ScopeGuard guard([&] { if (info) freeaddrinfo(info); });
+            ScopeGuard guard([&] { if (info) freeaddrinfo(info); });
             clear_error();
             int rc = getaddrinfo(name.data(), nullptr, &hints, &info);
             int err = get_error();

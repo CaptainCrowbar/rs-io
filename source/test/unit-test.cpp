@@ -10,6 +10,29 @@ int main(int argc, char** argv) {
     UNIT_TEST(rs_io_time_point_conversion)
     UNIT_TEST(rs_io_time_system_specific_conversions)
 
+    // path-name-test.cpp
+    UNIT_TEST(rs_io_path_legal_names)
+    UNIT_TEST(rs_io_path_unicode_names)
+    UNIT_TEST(rs_io_path_name_normalization)
+    UNIT_TEST(rs_io_path_name_properties)
+    UNIT_TEST(rs_io_path_name_breakdown)
+    UNIT_TEST(rs_io_path_name_combination)
+    UNIT_TEST(rs_io_path_name_manipulation)
+    UNIT_TEST(rs_io_path_name_comparison)
+
+    // path-file-system-test.cpp
+    UNIT_TEST(rs_io_path_resolution)
+    UNIT_TEST(rs_io_path_file_system_queries)
+    UNIT_TEST(rs_io_path_file_system_updates)
+    UNIT_TEST(rs_io_path_io)
+    UNIT_TEST(rs_io_path_links)
+    UNIT_TEST(rs_io_path_metadata)
+
+    // path-directory-test.cpp
+    UNIT_TEST(rs_io_path_directory_iterators)
+    UNIT_TEST(rs_io_path_current_directory)
+    UNIT_TEST(rs_io_path_deep_search)
+
     // channel-classes-test.cpp
     UNIT_TEST(rs_io_channel_generator)
     UNIT_TEST(rs_io_channel_buffer)

@@ -19,10 +19,9 @@ and headers into `/usr/local/bin` and `/usr/local/include` or the equivalent.
 Headers can be included individually as required, or the entire library can
 be included using `"rs-io.hpp"`.
 
-My [unit test library](https://github.com/CaptainCrowbar/rs-unit-test) is used
-for this library's unit tests. This a header-only library, and is not
-required if you only want to use this library without building its unit
-tests.
+My [formatting](https://github.com/CaptainCrowbar/rs-format)
+and [unit test](https://github.com/CaptainCrowbar/rs-unit-test) libraries
+are used by this library. These are header-only libraries.
 
 ## Index
 

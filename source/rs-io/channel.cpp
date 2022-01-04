@@ -19,7 +19,7 @@ namespace RS::IO {
 
     size_t StreamChannel::append(std::string& dst) {
         size_t pos = dst.size(), n = 0;
-        Detail::ScopeGuard guard([&] { dst.resize(pos + n); });
+        ScopeGuard guard([&] { dst.resize(pos + n); });
         dst.resize(pos + block_);
         n = read(&dst[0] + pos, block_);
         return n;

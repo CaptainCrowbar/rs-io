@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rs-io/channel.hpp"
+#include "rs-io/utility.hpp"
 #include <atomic>
 #include <cstring>
 #include <functional>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rs-io/time.hpp"
+#include "rs-io/utility.hpp"
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -17,26 +18,6 @@
 #include <utility>
 
 namespace RS::IO {
-
-    // Implementation details
-
-    namespace Detail {
-
-        class ScopeGuard {
-        public:
-            template <typename F> explicit ScopeGuard(F callback)
-                { try { call_ = callback; } catch (...) { callback(); throw; } }
-            ~ScopeGuard() noexcept { if (call_) { try { call_(); } catch (...) {} } }
-            ScopeGuard(const ScopeGuard&) = delete;
-            ScopeGuard(ScopeGuard&&) = delete;
-            ScopeGuard& operator=(const ScopeGuard&) = delete;
-            ScopeGuard& operator=(ScopeGuard&&) = delete;
-            void release() noexcept { call_ = nullptr; }
-        private:
-            std::function<void()> call_;
-        };
-
-    }
 
     // Forward declarations
 

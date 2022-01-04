@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rs-io/utility.hpp"
 #include <chrono>
 #include <string>
 
