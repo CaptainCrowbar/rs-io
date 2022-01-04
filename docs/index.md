@@ -27,6 +27,8 @@ are used by this library. These are header-only libraries.
 
 * General utilities
     * [Time utilities](time.html)
+* File system
+    * [File path](path.html)
 * Multithreading
     * [Thread pool](thread-pool.html)
 * Message dispatch
