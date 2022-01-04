@@ -60,6 +60,17 @@ namespace RS::IO {
     IoError::IoError(std::errc condition, const std::string& details):
     std::system_error(std::make_error_code(condition), details) {}
 
+    // Class LineIterator
+
+    LineIterator& LineIterator::operator++() {
+        if (iop) {
+            line = iop->read_line();
+            if (line.empty())
+                iop = nullptr;
+        }
+        return *this;
+    }
+
     // Class IoBase
 
     int IoBase::getc() {
@@ -126,15 +137,6 @@ namespace RS::IO {
         do ofs += write(ptr + ofs, len - ofs);
             while (ofs < len);
         return ofs;
-    }
-
-    IoBase::line_iterator& IoBase::line_iterator::operator++() {
-        if (iop) {
-            line = iop->read_line();
-            if (line.empty())
-                iop = nullptr;
-        }
-        return *this;
     }
 
     // Class Cstdio

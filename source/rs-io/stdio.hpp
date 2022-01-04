@@ -14,6 +14,8 @@ namespace RS::IO {
 
     // Supporting types
 
+    class IoBase;
+
     RS_DEFINE_ENUM_CLASS(IoMode, int, 1,
         read,
         write,
@@ -32,23 +34,23 @@ namespace RS::IO {
         explicit IoError(std::errc condition, const std::string& details);
     };
 
+    class LineIterator:
+    public InputIterator<LineIterator, const std::string> {
+    public:
+        LineIterator() = default;
+        explicit LineIterator(IoBase& io): iop(&io), line() { ++*this; }
+        const std::string& operator*() const noexcept { return line; }
+        LineIterator& operator++();
+        bool operator==(const LineIterator& rhs) const noexcept { return iop == rhs.iop; }
+    private:
+        IoBase* iop = nullptr;
+        std::string line;
+    };
+
     // I/O abstract base class
 
     class IoBase {
     public:
-
-        class line_iterator:
-        public InputIterator<line_iterator, const std::string> {
-        public:
-            line_iterator() = default;
-            explicit line_iterator(IoBase& io): iop(&io), line() { ++*this; }
-            const std::string& operator*() const noexcept { return line; }
-            line_iterator& operator++();
-            bool operator==(const line_iterator& rhs) const noexcept { return iop == rhs.iop; }
-        private:
-            IoBase* iop = nullptr;
-            std::string line;
-        };
 
         virtual ~IoBase() noexcept {}
 
@@ -63,7 +65,7 @@ namespace RS::IO {
         virtual ptrdiff_t tell() = 0;
         virtual size_t write(const void* ptr, size_t len) = 0;
 
-        Irange<line_iterator> lines() { return {line_iterator(*this), {}}; }
+        Irange<LineIterator> lines() { return {LineIterator(*this), {}}; }
         std::string read_all();
         size_t read_some(std::string& buf, size_t maxlen);
         std::string reads(size_t maxlen = 1'048'576);
