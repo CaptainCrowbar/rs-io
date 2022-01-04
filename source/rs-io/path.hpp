@@ -8,13 +8,10 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace RS::IO {
-
-    // File name class
 
     class Path:
     public TotalOrder<Path> {
@@ -32,11 +29,10 @@ namespace RS::IO {
         class directory_iterator;
         class search_iterator;
 
-        using deep_search_range = Irange<search_iterator>;
+        using search_range = Irange<search_iterator>;
         using directory_range = Irange<directory_iterator>;
         using id_type = std::pair<uint64_t, uint64_t>;
         using string_type = std::basic_string<character_type>;
-        using string_view_type = std::basic_string_view<character_type>;
         using time_point = std::chrono::system_clock::time_point;
 
         enum class form {
@@ -115,6 +111,7 @@ namespace RS::IO {
         // Path name functions
 
         std::string name() const;
+        std::string str() const { return name(); }
         string_type os_name() const { return filename_; }
         const character_type* c_name() const noexcept { return filename_.data(); }
 
@@ -147,11 +144,9 @@ namespace RS::IO {
         template <typename Range> static Path join(const Range& files);
         friend Path operator/(const Path& lhs, const Path& rhs) { return Path::join(lhs, rhs); }
         friend Path& operator/=(Path& lhs, const Path& rhs) { lhs = Path::join(lhs, rhs); return lhs; }
-        friend std::string to_str(const Path& p) { return p.name(); }
-        friend std::string to_str(Path::form f);
 
         friend std::ostream& operator<<(std::ostream& out, const Path& p) { return out << p.name(); }
-        friend std::ostream& operator<<(std::ostream& out, Path::form f) { return out << to_str(f); }
+        friend std::ostream& operator<<(std::ostream& out, Path::form f);
         friend bool operator==(const Path& lhs, const Path& rhs) noexcept { return lhs.filename_ == rhs.filename_; }
         friend bool operator<(const Path& lhs, const Path& rhs) noexcept { return lhs.filename_ < rhs.filename_; }
 
@@ -163,7 +158,7 @@ namespace RS::IO {
         time_point status_time(int flags = 0) const noexcept;
 
         directory_range directory(int flags = 0) const;
-        deep_search_range deep_search(int flags = 0) const;
+        search_range deep_search(int flags = 0) const;
         bool exists(int flags = 0) const noexcept;
         id_type id(int flags = 0) const noexcept;
 
@@ -192,13 +187,11 @@ namespace RS::IO {
         void set_create_time(time_point t, int flags = 0) const;
         void set_modify_time(int flags = 0) const { set_modify_time(std::chrono::system_clock::now(), flags); }
         void set_modify_time(time_point t, int flags = 0) const;
-        void set_status_time(int flags = 0) const { set_status_time(std::chrono::system_clock::now(), flags); }
-        void set_status_time(time_point t, int flags = 0) const;
 
         // I/O functions
 
-        void load(std::string& dst, size_t maxlen = npos, int flags = 0) const;
-        void save(std::string_view src, int flags = 0) const;
+        void load(std::string& str, size_t maxlen = npos, int flags = 0) const;
+        void save(const std::string& str, int flags = 0) const;
 
         // Process state functions
 

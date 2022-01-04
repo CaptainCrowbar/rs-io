@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
-#include <ios>
 #include <regex>
 #include <stdexcept>
 #include <system_error>
@@ -15,6 +14,7 @@
 #endif
 
 #ifdef _XOPEN_SOURCE
+
     #include <dirent.h>
     #include <fcntl.h>
     #include <pwd.h>
@@ -22,12 +22,17 @@
     #include <sys/time.h>
     #include <sys/types.h>
     #include <unistd.h>
-    #define CX(c) c
-    #define FX(f) f
+
+    #define OS_CHAR(c) c
+    #define OS_FUNCTION(f) f
+
 #else
+
     #include <windows.h>
-    #define CX(c) L##c
-    #define FX(f) _w##f
+
+    #define OS_CHAR(c) L ## c
+    #define OS_FUNCTION(f) _w ## f
+
 #endif
 
 using namespace std::chrono;
@@ -46,7 +51,7 @@ namespace RS::IO {
 
             StatResult get_stat(const std::string& file, int flags) noexcept {
                 StatResult result;
-                result.ok = (flags & Path::no_follow ? lstat : stat)(file.data(), &result.st) == 0;
+                result.ok = ((flags & Path::no_follow) != 0 ? lstat : stat)(file.data(), &result.st) == 0;
                 if (! result.ok)
                     memset(&result.st, 0, sizeof(result.st));
                 return result;
@@ -232,8 +237,8 @@ namespace RS::IO {
         string_type prefix = filename_;
         prefix.resize(prefix.size() - get_base_ext().second.size());
         auto suffix = make_native_string(new_ext);
-        if (! suffix.empty() && suffix[0] != CX('.'))
-            prefix += CX('.');
+        if (! suffix.empty() && suffix[0] != OS_CHAR('.'))
+            prefix += OS_CHAR('.');
         return prefix + suffix;
     }
 
@@ -313,7 +318,7 @@ namespace RS::IO {
         Path prefix;
         if (base_vec.end() > cuts.first) {
             size_t len = 3 * (base_vec.end() - cuts.first) - 1;
-            prefix.filename_.assign(len, CX('.'));
+            prefix.filename_.assign(len, OS_CHAR('.'));
             for (size_t i = 2; i < len; i += 3)
                 prefix.filename_[i] = native_delimiter;
         }
@@ -376,15 +381,16 @@ namespace RS::IO {
         return result;
     }
 
-    std::string to_str(Path::form f) {
+    std::ostream& operator<<(std::ostream& out, Path::form f) {
         switch (f) {
-            case Path::form::empty:           return "empty";
-            case Path::form::absolute:        return "absolute";
-            case Path::form::relative:        return "relative";
-            case Path::form::drive_absolute:  return "drive_absolute";
-            case Path::form::drive_relative:  return "drive_relative";
-            default:                          return std::to_string(int(f));
+            case Path::form::empty:           out << "empty"; break;
+            case Path::form::absolute:        out << "absolute"; break;
+            case Path::form::relative:        out << "relative"; break;
+            case Path::form::drive_absolute:  out << "drive_absolute"; break;
+            case Path::form::drive_relative:  out << "drive_relative"; break;
+            default:                          out << int(f); break;
         }
+        return out;
     }
 
     // File system query functions
@@ -453,7 +459,7 @@ namespace RS::IO {
         return {it, {}};
     }
 
-    Path::deep_search_range Path::deep_search(int flags) const {
+    Path::search_range Path::deep_search(int flags) const {
         search_iterator it(*this, flags);
         return {it, {}};
     }
@@ -461,7 +467,7 @@ namespace RS::IO {
     bool Path::exists(int flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             struct stat st;
-            if (flags & no_follow)
+            if ((flags & no_follow) != 0)
                 return lstat(c_name(), &st) == 0;
             else
                 return stat(c_name(), &st) == 0;
@@ -525,7 +531,7 @@ namespace RS::IO {
     }
 
     bool Path::is_hidden() const noexcept {
-        if (filename_.empty() || filename_ == CX(".") || filename_ == CX(".."))
+        if (filename_.empty() || filename_ == OS_CHAR(".") || filename_ == OS_CHAR(".."))
             return false;
         #ifdef _XOPEN_SOURCE
             auto leaf = get_leaf();
@@ -635,7 +641,7 @@ namespace RS::IO {
             auto info = get_attributes_ex(filename_);
             uint64_t bytes = (uint64_t(info.nFileSizeHigh) << 32) + uint64_t(info.nFileSizeLow);
         #endif
-        if (flags & recurse)
+        if ((flags & recurse) != 0)
             for (auto& child: directory())
                 bytes += child.size(no_follow | recurse);
         return bytes;
@@ -649,10 +655,10 @@ namespace RS::IO {
             throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory), name());
         if (*this == dst || id() == dst.id())
             throw std::system_error(std::make_error_code(std::errc::file_exists), dst.name());
-        if (is_directory() && ! (flags & recurse))
+        if (is_directory() && (flags & recurse) == 0)
             throw std::system_error(std::make_error_code(std::errc::is_a_directory), name());
         if (dst.exists()) {
-            if (! (flags & overwrite))
+            if ((flags & overwrite) == 0)
                 throw std::system_error(std::make_error_code(std::errc::file_exists), dst.name());
             dst.remove(recurse);
         }
@@ -663,12 +669,12 @@ namespace RS::IO {
             for (auto& child: directory())
                 child.copy_to(dst / child.split_path().second, recurse);
         } else {
-            auto in = FX(fopen)(c_name(), CX("rb"));
+            auto in = OS_FUNCTION(fopen)(c_name(), OS_CHAR("rb"));
             int err = errno;
             if (! in)
                 throw std::system_error(err, std::generic_category(), name());
             ScopeGuard guard_in([=] { fclose(in); });
-            auto out = FX(fopen)(dst.c_name(), CX("wb"));
+            auto out = OS_FUNCTION(fopen)(dst.c_name(), OS_CHAR("wb"));
             err = errno;
             if (! out)
                 throw std::system_error(err, std::generic_category(), dst.name());
@@ -710,10 +716,10 @@ namespace RS::IO {
         if (err == EEXIST) {
             if (is_directory())
                 return;
-            if (! (flags & overwrite))
+            if ((flags & overwrite) == 0)
                 throw std::system_error(err, std::generic_category(), name());
             remove();
-        } else if (err == ENOENT && (flags & recurse) && ! empty()) {
+        } else if (err == ENOENT && (flags & recurse) != 0 && ! empty()) {
             Path parent = split_path().first;
             if (parent == *this)
                 throw std::system_error(err, std::generic_category(), name());
@@ -734,20 +740,21 @@ namespace RS::IO {
                 }
                 catch (const std::system_error&) {}
             }
-            if ((flags & overwrite) && linkname.exists())
+            if ((flags & overwrite) != 0 && linkname.exists())
                 linkname.remove(flags);
             if (symlink(c_name(), linkname.c_name()) == 0)
                 return;
-            if (! (flags & may_copy)) {
+            if ((flags & may_copy) == 0) {
                 int err = errno;
                 throw std::system_error(err, std::generic_category(), linkname.name() + " -> " + name());
             }
             copy_to(linkname, recurse);
         #else
-            if (flags & may_copy)
+            if ((flags & may_copy) != 0)
                 copy_to(linkname, recurse);
             else
-                throw std::system_error(std::make_error_code(std::errc::operation_not_supported), "Symbolic links are not supported on Windows");
+                throw std::system_error(std::make_error_code(std::errc::operation_not_supported),
+                    "Symbolic links are not supported on Windows");
         #endif
     }
 
@@ -757,21 +764,21 @@ namespace RS::IO {
         if (*this == dst)
             return;
         if (dst.exists() && id() != dst.id()) {
-            if (! (flags & overwrite))
+            if ((flags & overwrite) == 0)
                 throw std::system_error(std::make_error_code(std::errc::file_exists), dst.name());
             dst.remove(recurse);
         }
-        if (FX(rename)(c_name(), dst.c_name()) == 0)
+        if (OS_FUNCTION(rename)(c_name(), dst.c_name()) == 0)
             return;
         int err = errno;
-        if (err != EXDEV || ! (flags & may_copy))
+        if (err != EXDEV || (flags & may_copy) == 0)
             throw std::system_error(err, std::generic_category(), name() + " -> " + dst.name());
         copy_to(dst, recurse);
         remove(recurse);
     }
 
     void Path::remove(int flags) const {
-        if ((flags & recurse) && is_directory() && ! is_symlink())
+        if ((flags & recurse) != 0 && is_directory() && ! is_symlink())
             for (auto child: directory())
                 child.remove(recurse);
         #ifdef _XOPEN_SOURCE
@@ -803,7 +810,8 @@ namespace RS::IO {
     void Path::set_create_time(time_point t, int /*flags*/) const {
         #ifdef _XOPEN_SOURCE
             (void)t;
-            throw std::system_error(std::make_error_code(std::errc::operation_not_supported), "The operating system does not support modifying file creation time");
+            throw std::system_error(std::make_error_code(std::errc::operation_not_supported),
+                "The operating system does not support modifying file creation time");
         #else
             set_file_time(t, 0);
         #endif
@@ -818,61 +826,62 @@ namespace RS::IO {
         #endif
     }
 
-    void Path::set_status_time(time_point /*t*/, int /*flags*/) const {
-        throw std::system_error(std::make_error_code(std::errc::operation_not_supported), "The operating system does not support modifying file status time");
-    }
-
     // I/O functions
 
-    void Path::load(std::string& dst, size_t maxlen, int flags) const {
+    void Path::load(std::string& str, size_t maxlen, int flags) const {
         static constexpr size_t block_size = 16384;
         FILE* in = nullptr;
-        ScopeGuard guard([&] { if (in && in != stdin) fclose(in); });
-        if ((flags & std_default) && (filename_.empty() || filename_ == CX("-"))) {
+        ScopeGuard guard([&] { if (in != nullptr && in != stdin) fclose(in); });
+        if ((flags & std_default) != 0 && (filename_.empty() || filename_ == OS_CHAR("-"))) {
             in = stdin;
         } else {
-            in = FX(fopen)(c_name(), CX("rb"));
+            in = OS_FUNCTION(fopen)(c_name(), OS_CHAR("rb"));
             if (! in) {
-                if (! (flags & may_fail))
-                    throw std::ios::failure("Read error: " + name());
-                dst.clear();
+                if ((flags & may_fail) == 0)
+                    throw std::system_error(std::make_error_code(std::errc::io_error), name());
+                str.clear();
                 return;
             }
         }
-        dst.clear();
-        while (dst.size() < maxlen) {
-            size_t ofs = dst.size(), n = std::min(maxlen - ofs, block_size);
-            dst.append(n, '\0');
-            size_t rc = ::fread(&dst[0] + ofs, 1, n, in);
-            dst.resize(ofs + rc);
+        str.clear();
+        while (str.size() < maxlen) {
+            size_t ofs = str.size(), n = std::min(maxlen - ofs, block_size);
+            str.append(n, '\0');
+            size_t rc = ::fread(&str[0] + ofs, 1, n, in);
+            str.resize(ofs + rc);
             if (rc < n)
                 break;
         }
     }
 
-    void Path::save(std::string_view src, int flags) const {
+    void Path::save(const std::string& str, int flags) const {
+        static constexpr int options = append | overwrite;
+        if ((flags & options) == options)
+            throw std::invalid_argument("Invalid options to Path::save()");
         FILE* out = nullptr;
-        ScopeGuard guard([&] { if (out && out != stdout) fclose(out); });
-        if ((flags & std_default) && (filename_.empty() || filename_ == CX("-"))) {
+        ScopeGuard guard([&] { if (out != nullptr && out != stdout) fclose(out); });
+        if ((flags & std_default) != 0 && (filename_.empty() || filename_ == OS_CHAR("-"))) {
             out = stdout;
         } else {
-            out = FX(fopen)(c_name(), flags & append ? CX("ab") : CX("wb"));
+            if ((flags & options) == 0 && exists())
+                throw std::system_error(std::make_error_code(std::errc::file_exists), name());
+            out = OS_FUNCTION(fopen)(c_name(), (flags & append) != 0 ? OS_CHAR("ab") : OS_CHAR("wb"));
             if (! out)
-                throw std::ios::failure("Write error: " + name());
+                throw std::system_error(std::make_error_code(std::errc::io_error), name());
         }
         size_t pos = 0;
-        while (pos < src.size()) {
+        while (pos < str.size()) {
             errno = 0;
-            pos += ::fwrite(src.data() + pos, 1, src.size() - pos, out);
+            pos += ::fwrite(str.data() + pos, 1, str.size() - pos, out);
             if (errno)
-                throw std::ios::failure("Write error: " + name());
+                throw std::system_error(std::make_error_code(std::errc::io_error), name());
         }
     }
 
     // Process state functions
 
     void Path::change_directory() const {
-        if (FX(chdir)(c_name()) == -1) {
+        if (OS_FUNCTION(chdir)(c_name()) == -1) {
             int err = errno;
             throw std::system_error(err, std::generic_category(), name());
         }
@@ -898,7 +907,7 @@ namespace RS::IO {
             start = 0;
         size_t dot = npos;
         if (start < filename_.size()) {
-                dot = filename_.find_last_of(CX('.'));
+                dot = filename_.find_last_of(OS_CHAR('.'));
                 if (dot <= start || dot >= filename_.size() - 1)
                 dot = npos;
             }
@@ -949,7 +958,7 @@ namespace RS::IO {
 
     void Path::make_canonical(int flags) {
         static const string_type ss = {native_delimiter, native_delimiter};
-        static const string_type sds = {native_delimiter, CX('.'), native_delimiter};
+        static const string_type sds = {native_delimiter, OS_CHAR('.'), native_delimiter};
         #ifndef _XOPEN_SOURCE
             // Replace slash delimiters
             std::replace(filename_.begin(), filename_.end(), L'/', L'\\');
@@ -992,7 +1001,7 @@ namespace RS::IO {
         // Trim trailing / and /.
         size_t root_size = get_root(true).size();
         size_t min_root = std::max(root_size, size_t(1));
-        while (filename_.size() > min_root && (filename_.back() == native_delimiter || (filename_.back() == CX('.') && filename_.end()[-2] == native_delimiter)))
+        while (filename_.size() > min_root && (filename_.back() == native_delimiter || (filename_.back() == OS_CHAR('.') && filename_.end()[-2] == native_delimiter)))
             filename_.pop_back();
         #ifndef _XOPEN_SOURCE
             // Ensure a trailing slash on network paths
@@ -1008,7 +1017,7 @@ namespace RS::IO {
                 filename_[drive] -= 0x20;
         #endif
         // Validate if requested
-        if ((flags & legal_name) && ! is_legal())
+        if ((flags & legal_name) != 0 && ! is_legal())
             throw std::invalid_argument("Invalid file name: " + Format::quote(name()));
     }
 
@@ -1031,7 +1040,7 @@ namespace RS::IO {
             timespec times[2];
             timepoint_to_timespec(atime, times[0]);
             timepoint_to_timespec(mtime, times[1]);
-            int utflags = flags & no_follow ? AT_SYMLINK_NOFOLLOW : 0;
+            int utflags = (flags & no_follow) != 0 ? AT_SYMLINK_NOFOLLOW : 0;
             errno = 0;
             int rc = utimensat(AT_FDCWD, c_name(), times, utflags);
             int err = errno;
@@ -1111,7 +1120,7 @@ namespace RS::IO {
     };
 
     Path::directory_iterator::directory_iterator(const Path& dir, int flags) {
-        if ((flags & unicode) && ! dir.is_unicode())
+        if ((flags & unicode) != 0 && ! dir.is_unicode())
             return;
         #ifdef _XOPEN_SOURCE
             impl = std::make_shared<impl_type>();
@@ -1151,9 +1160,9 @@ namespace RS::IO {
     }
 
     Path::directory_iterator& Path::directory_iterator::operator++() {
-        static const string_type dot1(1, CX('.'));
-        static const string_type dot2(2, CX('.'));
-        const bool skip_hidden = impl->flags & no_hidden;
+        static const string_type dot1(1, OS_CHAR('.'));
+        static const string_type dot2(2, OS_CHAR('.'));
+        const bool skip_hidden = (impl->flags & no_hidden) != 0;
         while (impl) {
             #ifdef _XOPEN_SOURCE
                 dirent* entptr = nullptr;

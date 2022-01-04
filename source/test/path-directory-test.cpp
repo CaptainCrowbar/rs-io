@@ -69,7 +69,7 @@ void test_rs_io_path_current_directory() {
 void test_rs_io_path_deep_search() {
 
     Path root = "__test_root__";
-    Path::deep_search_range range;
+    Path::search_range range;
     std::vector<Path> files;
     std::string s;
     ScopeGuard guard([=] { root.remove(Path::recurse); });

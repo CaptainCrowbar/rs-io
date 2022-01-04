@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
-#include <ios>
 #include <iterator>
 #include <string>
 #include <system_error>
@@ -279,7 +278,7 @@ void test_rs_io_path_io() {
     TRY(testfile.load(s));
     TEST_EQUAL(s, "Hello world\nGoodbye\n");
 
-    TEST_THROW(nofile.load(s), std::ios::failure);
+    TEST_THROW(nofile.load(s), std::system_error);
     TRY(nofile.load(s, npos, Path::may_fail));
     TEST(s.empty());
 
