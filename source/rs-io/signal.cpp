@@ -72,7 +72,7 @@ namespace RS::IO {
             return Channel::wait_until(t);
         }
 
-        #if defined(__APPLE__) || defined(__CYGWIN__)
+        #if defined(__APPLE__)
 
             bool PosixSignal::wait_for(duration t) {
                 static const duration delta = 10ms;
@@ -251,9 +251,6 @@ namespace RS::IO {
                 #endif
                 #ifdef SIGIO
                     SIGNAL_NAME(SIGIO)
-                #endif
-                #ifdef SIGLOST
-                    SIGNAL_NAME(SIGLOST)
                 #endif
                 #ifdef SIGPOLL
                     SIGNAL_NAME(SIGPOLL)

@@ -134,52 +134,67 @@ namespace RS::IO {
             std::fclose(fp);
     }
 
-    Cstdio::Cstdio(const Path& f, mode m) {
+    Cstdio::Cstdio(const Path& f, IoMode m) {
+
         if (f.empty() || f.name() == "-") {
-            if (m == mode::read_only) {
+
+            if (m == IoMode::read)
                 *this = std_input();
-                return;
-            } else if (m == mode::write_only || m == mode::append) {
+            else if (m == IoMode::write || m == IoMode::append)
                 *this = std_output();
-                return;
-            }
-        } else if (m == mode::open_always) {
+
+        } else if (m == IoMode::open_always) {
+
             // There is no C stdio mode corresponding directly to the
-            // behaviour we want from IoBase::mode::open_always. Try "rb+"
-            // first(open for R/W if the file exists, otherwise fail), and if
-            // that fails, try "wb+" (open for R/W regardless, destroying any
+            // behaviour we want from IoMode::open_always. Try "rb+" first
+            // (open for R/W if the file exists, otherwise fail), and if that
+            // fails, try "wb+" (open for R/W regardless, destroying any
             // existing file). There's a race condition here but I don't
             // think there's any way around it.
+
             std::string iomode = "rb+";
             *this = Cstdio(f, "rb+");
             if (! fp_)
                 *this = Cstdio(f, "wb+");
+
         } else {
+
             std::string cmode;
+
             switch (m) {
-                case mode::read_only:      cmode = "rb"; break;
-                case mode::write_only:     cmode = "wb"; break;
-                case mode::append:         cmode = "ab"; break;
-                case mode::create_always:  cmode = "wb+"; break;
-                case mode::open_existing:  cmode = "rb+"; break;
-                default:                   break;
+                case IoMode::read:           cmode = "rb"; break;
+                case IoMode::write:          cmode = "wb"; break;
+                case IoMode::append:         cmode = "ab"; break;
+                case IoMode::create_always:  cmode = "wb+"; break;
+                case IoMode::open_existing:  cmode = "rb+"; break;
+                default:                     break;
             }
+
             *this = Cstdio(f, cmode);
+
         }
+
     }
 
     Cstdio::Cstdio(const Path& f, const std::string& iomode) {
+
         #ifdef _XOPEN_SOURCE
+
             errno = 0;
             auto rc = ::fopen(f.c_name(), iomode.data());
+
         #else
+
             auto wmode = to_wstring(iomode);
             errno = 0;
             auto rc = _wfopen(f.c_name(), wmode.data());
+
         #endif
+
         int err = errno;
         *this = Cstdio(rc);
         set_error(err);
+
     }
 
     void Cstdio::close() noexcept {
@@ -285,46 +300,56 @@ namespace RS::IO {
             IO_FUNCTION(close)(fd);
     }
 
-    Fdio::Fdio(const Path& f, mode m) {
+    Fdio::Fdio(const Path& f, IoMode m) {
+
         if (f.empty() || f.name() == "-") {
-            if (m == mode::read_only) {
+
+            if (m == IoMode::read) {
                 *this = std_input();
                 return;
-            } else if (m == mode::write_only || m == mode::append) {
+            } else if (m == IoMode::write || m == IoMode::append) {
                 *this = std_output();
                 return;
             }
+
         }
+
         int fmode = 0;
+
         switch (m) {
-            case mode::read_only:      fmode = O_RDONLY; break;
-            case mode::write_only:     fmode = O_WRONLY|O_CREAT|O_TRUNC; break;
-            case mode::append:         fmode = O_WRONLY|O_APPEND|O_CREAT; break;
-            case mode::create_always:  fmode = O_RDWR|O_CREAT|O_TRUNC; break;
-            case mode::open_always:    fmode = O_RDWR|O_CREAT; break;
-            case mode::open_existing:  fmode = O_RDWR; break;
-            default:                   break;
+            case IoMode::read:           fmode = O_RDONLY; break;
+            case IoMode::write:          fmode = O_WRONLY|O_CREAT|O_TRUNC; break;
+            case IoMode::append:         fmode = O_WRONLY|O_APPEND|O_CREAT; break;
+            case IoMode::create_always:  fmode = O_RDWR|O_CREAT|O_TRUNC; break;
+            case IoMode::open_always:    fmode = O_RDWR|O_CREAT; break;
+            case IoMode::open_existing:  fmode = O_RDWR; break;
+            default:                     break;
         }
+
         *this = Fdio(f, fmode, 0666);
+
     }
 
     Fdio::Fdio(const Path& f, int iomode, int perm) {
+
         #ifdef _XOPEN_SOURCE
-            #ifdef __CYGWIN__
-                if (! (iomode & (O_BINARY | O_TEXT)))
-                    iomode |= O_BINARY;
-            #endif
+
             errno = 0;
             auto rc = ::open(f.c_name(), iomode, perm);
+
         #else
+
             if (! (iomode & (_O_BINARY | _O_TEXT | _O_U8TEXT | _O_U16TEXT | _O_WTEXT)))
                 iomode |= _O_BINARY;
             errno = 0;
             auto rc = _wopen(f.c_name(), iomode, perm);
+
         #endif
+
         int err = errno;
         *this = Fdio(rc);
         set_error(err);
+
     }
 
     void Fdio::close() noexcept {
@@ -429,40 +454,47 @@ namespace RS::IO {
                 CloseHandle(fh);
         }
 
-        Winio::Winio(const Path& f, mode m) {
+        Winio::Winio(const Path& f, IoMode m) {
+
             if (f.empty() || f.name() == "-") {
-                if (m == mode::read_only) {
+                if (m == IoMode::read) {
                     *this = std_input();
                     return;
-                } else if (m == mode::write_only || m == mode::append) {
+                } else if (m == IoMode::write || m == IoMode::append) {
                     *this = std_output();
                     return;
                 }
             }
+
             uint32_t access = 0, creation = 0;
+
             switch (m) {
-                case mode::read_only:      access = GENERIC_READ; creation = OPEN_EXISTING; break;
-                case mode::write_only:     access = GENERIC_WRITE; creation = CREATE_ALWAYS; break;
-                case mode::append:         access = GENERIC_WRITE; creation = OPEN_ALWAYS; break;
-                case mode::create_always:  access = GENERIC_READ | GENERIC_WRITE; creation = CREATE_ALWAYS; break;
-                case mode::open_always:    access = GENERIC_READ | GENERIC_WRITE; creation = OPEN_ALWAYS; break;
-                case mode::open_existing:  access = GENERIC_READ | GENERIC_WRITE; creation = OPEN_EXISTING; break;
-                default:                   break;
+                case IoMode::read:           access = GENERIC_READ; creation = OPEN_EXISTING; break;
+                case IoMode::write:          access = GENERIC_WRITE; creation = CREATE_ALWAYS; break;
+                case IoMode::append:         access = GENERIC_WRITE; creation = OPEN_ALWAYS; break;
+                case IoMode::create_always:  access = GENERIC_READ | GENERIC_WRITE; creation = CREATE_ALWAYS; break;
+                case IoMode::open_always:    access = GENERIC_READ | GENERIC_WRITE; creation = OPEN_ALWAYS; break;
+                case IoMode::open_existing:  access = GENERIC_READ | GENERIC_WRITE; creation = OPEN_EXISTING; break;
+                default:                     break;
             }
+
             *this = Winio(f, access, 0, nullptr, creation);
-            if (m == mode::append) {
+
+            if (m == IoMode::append) {
                 LARGE_INTEGER distance;
                 distance.QuadPart = 0;
                 SetLastError(0);
                 SetFilePointerEx(fh_, distance, nullptr, FILE_END);
                 set_error(GetLastError(), std::system_category());
             }
+
         }
 
         Winio::Winio(const Path& f, uint32_t desired_access, uint32_t share_mode, LPSECURITY_ATTRIBUTES security_attributes,
                 uint32_t creation_disposition, uint32_t flags_and_attributes, HANDLE template_file) {
             SetLastError(0);
-            auto rc = CreateFileW(f.c_name(), desired_access, share_mode, security_attributes, creation_disposition, flags_and_attributes, template_file);
+            auto rc = CreateFileW(f.c_name(), desired_access, share_mode, security_attributes,
+                creation_disposition, flags_and_attributes, template_file);
             int err = GetLastError();
             *this = Winio(rc);
             set_error(err, std::system_category());
@@ -538,11 +570,15 @@ namespace RS::IO {
     }
 
     TempFile::TempFile(const Path& dir, const std::string& prefix) {
+
         static constexpr int max_tries = 100;
+
         if (! dir.empty() && ! dir.is_directory())
             throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory));
+
         std::random_device dev;
         Fdio fdio;
+
         for (int i = 0; i < max_tries && ! fdio.ok(); ++i) {
             uint64_t x = dev();
             uint64_t y = dev();
@@ -551,15 +587,19 @@ namespace RS::IO {
             where_ = where_.resolve();
             fdio = Fdio(where_, O_RDWR | O_CREAT | O_EXCL);
         }
+
         fdio.check();
         FILE* file = nullptr;
-        #if defined(_WIN32) && ! defined(__CYGWIN__)
-            file = _wfdopen(fdio.release(), L"rb+");
-        #else
+
+        #if defined(_XOPEN_SOURCE)
             file = fdopen(fdio.release(), "rb+");
+        #else
+            file = _wfdopen(fdio.release(), L"rb+");
         #endif
+
         Cstdio io(file);
         Cstdio::operator=(std::move(io));
+
     }
 
     TempFile::~TempFile() noexcept {

@@ -2,6 +2,7 @@
 
 #include "rs-io/path.hpp"
 #include "rs-io/utility.hpp"
+#include "rs-format/enum.hpp"
 #include "rs-format/format.hpp"
 #include "rs-format/string.hpp"
 #include <cstdio>
@@ -12,6 +13,15 @@
 namespace RS::IO {
 
     // I/O abstract base class
+
+    RS_DEFINE_ENUM_CLASS(IoMode, int, 1,
+        read,
+        write,
+        append,
+        create_always,
+        open_always,
+        open_existing
+    )
 
     class IoBase {
     public:
@@ -27,15 +37,6 @@ namespace RS::IO {
         private:
             IoBase* iop = nullptr;
             std::string line;
-        };
-
-        enum class mode {
-            read_only = 1,
-            write_only,
-            append,
-            create_always,
-            open_always,
-            open_existing,
         };
 
         virtual ~IoBase() = default;
@@ -101,7 +102,7 @@ namespace RS::IO {
 
         Cstdio() = default;
         explicit Cstdio(FILE* f) noexcept: fp_(f) {}
-        explicit Cstdio(const Path& f, mode m = mode::read_only);
+        explicit Cstdio(const Path& f, IoMode m = IoMode::read);
         Cstdio(const Path& f, const std::string& iomode);
 
         Cstdio(const Cstdio&) = delete;
@@ -151,7 +152,7 @@ namespace RS::IO {
 
         Fdio() = default;
         explicit Fdio(int f) noexcept: fd_(f) {}
-        explicit Fdio(const Path& f, mode m = mode::read_only);
+        explicit Fdio(const Path& f, IoMode m = IoMode::read);
         Fdio(const Path& f, int iomode, int perm = 0666);
 
         Fdio(const Fdio&) = delete;
@@ -209,7 +210,7 @@ namespace RS::IO {
 
             Winio() = default;
             explicit Winio(void* f) noexcept: fh_(f) {}
-            explicit Winio(const Path& f, mode m = mode::read_only);
+            explicit Winio(const Path& f, IoMode m = IoMode::read);
             Winio(const Path& f, uint32_t desired_access, uint32_t share_mode, LPSECURITY_ATTRIBUTES security_attributes,
                 uint32_t creation_disposition, uint32_t flags_and_attributes = 0, HANDLE template_file = nullptr);
 

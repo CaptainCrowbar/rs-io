@@ -33,7 +33,7 @@ void test_rs_io_stdio_cstdio() {
     TEST(! io.is_open());
     TEST(! io.ok());
 
-    TRY(io = Cstdio(file, IoBase::mode::write_only));
+    TRY(io = Cstdio(file, IoMode::write));
     TEST(io.is_open());
     TEST(io.ok());
     TRY(io.writes("Hello world\n"));
@@ -97,10 +97,10 @@ void test_rs_io_stdio_cstdio() {
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 11);
     TRY(io.close());
 
-    TRY(io = Cstdio(no_file, IoBase::mode::read_only));
+    TRY(io = Cstdio(no_file, IoMode::read));
     TEST_THROW(io.check(), std::system_error);
 
-    TRY(io = Cstdio(file, IoBase::mode::write_only));
+    TRY(io = Cstdio(file, IoMode::write));
     TRY(io.format("Agent {0}\n", 86));
     TRY(io.print("Agent", 99));
     TRY(io.write_chars(10, '*'));
@@ -130,7 +130,7 @@ void test_rs_io_stdio_fdio() {
     TEST(! io.is_open());
     TEST(! io.ok());
 
-    TRY(io = Fdio(file, IoBase::mode::write_only));
+    TRY(io = Fdio(file, IoMode::write));
     TEST(io.is_open());
     TEST(io.ok());
     TRY(io.writes("Hello world\n"));
@@ -189,10 +189,10 @@ void test_rs_io_stdio_fdio() {
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 11);
     TRY(io.close());
 
-    TRY(io = Fdio(no_file, IoBase::mode::read_only));
+    TRY(io = Fdio(no_file, IoMode::read));
     TEST_THROW(io.check(), std::system_error);
 
-    TRY(io = Fdio(file, IoBase::mode::write_only));
+    TRY(io = Fdio(file, IoMode::write));
     TRY(io.format("Agent {0}\n", 86));
     TRY(io.print("Agent", 99));
     TRY(io.write_chars(10, '*'));
@@ -237,7 +237,7 @@ void test_rs_io_stdio_winio() {
         TEST(! io.is_open());
         TEST(! io.ok());
 
-        TRY(io = Winio(file, IoBase::mode::write_only));
+        TRY(io = Winio(file, IoMode::write));
         TEST(io.is_open());
         TEST(io.ok());
         TRY(io.writes("Hello world\n"));
@@ -301,10 +301,10 @@ void test_rs_io_stdio_winio() {
         TRY(offset = io.tell());     TEST_EQUAL(offset, 11);
         TRY(io.close());
 
-        TRY(io = Winio(no_file, IoBase::mode::read_only));
+        TRY(io = Winio(no_file, IoMode::read));
         TEST_THROW(io.check(), std::system_error);
 
-        TRY(io = Winio(file, IoBase::mode::write_only));
+        TRY(io = Winio(file, IoMode::write));
         TRY(io.format("Agent {0}\n", 86));
         TRY(io.print("Agent", 99));
         TRY(io.write_chars(10, '*'));
