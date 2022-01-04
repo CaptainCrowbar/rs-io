@@ -1,5 +1,5 @@
-#include "rs-channel/net.hpp"
-#include "rs-channel/channel.hpp"
+#include "rs-io/net.hpp"
+#include "rs-io/channel.hpp"
 #include "rs-unit-test.hpp"
 #include <algorithm>
 #include <chrono>
@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 using namespace std::chrono;
 using namespace std::literals;
 
@@ -18,7 +18,7 @@ namespace {
 
 }
 
-void test_channel_net_tcp_client_server() {
+void test_rs_io_net_tcp_client_server() {
 
     auto t1 = std::thread([] {
         std::unique_ptr<TcpServer> server;
@@ -64,7 +64,7 @@ void test_channel_net_tcp_client_server() {
 
 }
 
-void test_channel_net_socket_set() {
+void test_rs_io_net_socket_set() {
 
     auto t1 = std::thread([] {
         std::unique_ptr<TcpServer> server;

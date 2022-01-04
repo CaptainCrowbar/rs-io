@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-namespace RS::Channel {
+namespace RS::IO {
 
     class ThreadPool {
     public:

@@ -11,7 +11,7 @@
     struct timeval;
 #endif
 
-namespace RS::Channel {
+namespace RS::IO {
 
     class Waiter {
     public:

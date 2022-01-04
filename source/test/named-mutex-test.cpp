@@ -1,14 +1,14 @@
-#include "rs-channel/named-mutex.hpp"
+#include "rs-io/named-mutex.hpp"
 #include "rs-unit-test.hpp"
 #include <chrono>
 #include <memory>
 #include <string>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 using namespace std::chrono;
 using namespace std::literals;
 
-void test_channel_named_mutex() {
+void test_rs_io_named_mutex() {
 
     std::string name = "rs-channel-named-mutex-test";
     std::unique_ptr<NamedMutex> mutex;

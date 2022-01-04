@@ -1,4 +1,4 @@
-#include "rs-channel/net.hpp"
+#include "rs-io/net.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <chrono>
@@ -20,7 +20,7 @@
 using namespace std::chrono;
 using namespace std::literals;
 
-namespace RS::Channel {
+namespace RS::IO {
 
     namespace {
 

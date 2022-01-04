@@ -1,10 +1,10 @@
-#include "rs-channel/thread-pool.hpp"
+#include "rs-io/thread-pool.hpp"
 #include <random>
 #include <utility>
 
 using namespace std::chrono;
 
-namespace RS::Channel {
+namespace RS::IO {
 
     // Class ThreadPool
 

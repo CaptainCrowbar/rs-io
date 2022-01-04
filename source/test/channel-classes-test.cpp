@@ -1,15 +1,15 @@
-#include "rs-channel/channel.hpp"
+#include "rs-io/channel.hpp"
 #include "rs-unit-test.hpp"
 #include <chrono>
 #include <optional>
 #include <string>
 #include <thread>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 using namespace std::chrono;
 using namespace std::literals;
 
-void test_channel_generator() {
+void test_rs_io_channel_generator() {
 
     int i = 0, j = 0;
     GeneratorChannel<int> chan([&i] { return ++i; });
@@ -37,7 +37,7 @@ void test_channel_generator() {
 
 }
 
-void test_channel_buffer() {
+void test_rs_io_channel_buffer() {
 
     BufferChannel chan;
     std::string s;
@@ -91,7 +91,7 @@ void test_channel_buffer() {
 
 }
 
-void test_channel_queue() {
+void test_rs_io_channel_queue() {
 
     QueueChannel<std::string> chan;
     std::string s;
@@ -120,7 +120,7 @@ void test_channel_queue() {
 
 }
 
-void test_channel_value() {
+void test_rs_io_channel_value() {
 
     ValueChannel<std::string> chan;
     std::string s;
@@ -149,7 +149,7 @@ void test_channel_value() {
 
 }
 
-void test_channel_timer() {
+void test_rs_io_channel_timer() {
 
     TimerChannel chan(25ms);
 

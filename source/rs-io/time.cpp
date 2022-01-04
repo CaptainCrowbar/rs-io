@@ -1,4 +1,4 @@
-#include "rs-channel/time.hpp"
+#include "rs-io/time.hpp"
 
 #ifdef _WIN32
     #include <windows.h>
@@ -10,7 +10,7 @@
 
 using namespace std::chrono;
 
-namespace RS::Channel {
+namespace RS::IO {
 
     namespace Detail {
 

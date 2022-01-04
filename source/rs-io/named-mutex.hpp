@@ -3,7 +3,7 @@
 #include <chrono>
 #include <string>
 
-namespace RS::Channel {
+namespace RS::IO {
 
     class NamedMutex {
 

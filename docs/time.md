@@ -1,10 +1,10 @@
 # Time Utilities
 
-_[Channel Library by Ross Smith](index.html)_
+_[I/O Library by Ross Smith](index.html)_
 
 ```c++
-#include "rs-channel/time.hpp"
-namespace RS::Channel;
+#include "rs-io/time.hpp"
+namespace RS::IO;
 ```
 
 ## Timed-wait base class

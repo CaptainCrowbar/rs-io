@@ -1,4 +1,4 @@
-#include "rs-channel/process.hpp"
+#include "rs-io/process.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <chrono>
@@ -18,7 +18,7 @@
 
 using namespace std::chrono;
 
-namespace RS::Channel {
+namespace RS::IO {
 
     namespace {
 

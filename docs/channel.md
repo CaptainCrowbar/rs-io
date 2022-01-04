@@ -1,10 +1,10 @@
 # Message Dispatch
 
-_[Channel Library by Ross Smith](index.html)_
+_[I/O Library by Ross Smith](index.html)_
 
 ```c++
-#include "rs-channel/channel.hpp"
-namespace RS::Channel;
+#include "rs-io/channel.hpp"
+namespace RS::IO;
 ```
 
 ## Contents

@@ -1,12 +1,12 @@
-#include "rs-channel/process.hpp"
-#include "rs-channel/channel.hpp"
+#include "rs-io/process.hpp"
+#include "rs-io/channel.hpp"
 #include "rs-unit-test.hpp"
 #include <chrono>
 #include <memory>
 #include <set>
 #include <string>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 using namespace std::chrono;
 using namespace std::literals;
 
@@ -39,7 +39,7 @@ namespace {
 
 }
 
-void test_channel_process_stream() {
+void test_rs_io_process_stream() {
 
     std::unique_ptr<StreamProcess> chan;
     std::string s;
@@ -78,7 +78,7 @@ void test_channel_process_stream() {
 
 }
 
-void test_channel_process_text() {
+void test_rs_io_process_text() {
 
     std::unique_ptr<TextProcess> chan;
     std::string s;
@@ -116,7 +116,7 @@ void test_channel_process_text() {
 
 }
 
-void test_channel_process_shell_command() {
+void test_rs_io_process_shell_command() {
 
     std::string s;
     std::multiset<std::string> set;

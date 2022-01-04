@@ -1,9 +1,9 @@
-#include "rs-channel/version.hpp"
+#include "rs-io/version.hpp"
 #include "rs-unit-test.hpp"
 
-using namespace RS::Channel;
+using namespace RS::IO;
 
-void test_channel_version() {
+void test_rs_io_version() {
 
     TEST_EQUAL(version()[0], 0);
     TEST_IN_RANGE(version()[1], 0, 100);

@@ -1,15 +1,15 @@
-#include "rs-channel/signal.hpp"
-#include "rs-channel/channel.hpp"
+#include "rs-io/signal.hpp"
+#include "rs-io/channel.hpp"
 #include "rs-unit-test.hpp"
 #include <chrono>
 #include <csignal>
 #include <vector>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 using namespace std::chrono;
 using namespace std::literals;
 
-void test_channel_signal_channel() {
+void test_rs_io_signal_channel() {
 
     #ifdef _XOPEN_SOURCE
 
@@ -105,7 +105,7 @@ void test_channel_signal_channel() {
 
 }
 
-void test_channel_signal_name() {
+void test_rs_io_signal_name() {
 
     #define SIGNAL_NAME(s) TEST_EQUAL(PosixSignal::name(s), #s)
 

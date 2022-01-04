@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.18)
 # Run rs-bump-version to increment the patch number
 # and propagate the new version to version.hpp.
 
-project(rs-channel
-    VERSION 0.1.9
+project(rs-io
+    VERSION 0.2.1
     LANGUAGES CXX
 )
 
@@ -47,7 +47,7 @@ endfunction()
 
 check_for_library(no rs-unit-test rs-unit-test.hpp https://github.com/CaptainCrowbar/rs-unit-test)
 
-set(library rs-channel)
+set(library rs-io)
 set(unittest test-${library})
 include_directories(.)
 find_package(Threads REQUIRED)
@@ -88,4 +88,5 @@ if(WIN32)
 endif()
 
 install(DIRECTORY ${library} DESTINATION include)
+install(FILES ${library}.hpp DESTINATION include)
 install(TARGETS ${library} LIBRARY DESTINATION lib)

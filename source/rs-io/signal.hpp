@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rs-channel/channel.hpp"
+#include "rs-io/channel.hpp"
 #include <atomic>
 #include <csignal>
 #include <deque>
@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace RS::Channel {
+namespace RS::IO {
 
     class PosixSignal:
     public MessageChannel<int> {

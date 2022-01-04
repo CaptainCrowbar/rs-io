@@ -1,4 +1,4 @@
-#include "rs-channel/time.hpp"
+#include "rs-io/time.hpp"
 #include "rs-unit-test.hpp"
 #include <chrono>
 #include <ctime>
@@ -12,11 +12,11 @@
     #include <sys/time.h>
 #endif
 
-using namespace RS::Channel;
+using namespace RS::IO;
 using namespace std::chrono;
 using namespace std::literals;
 
-void test_channel_time_point_conversion() {
+void test_rs_io_time_point_conversion() {
 
     using sys_time = system_clock::time_point;
     using hrc_time = high_resolution_clock::time_point;
@@ -37,7 +37,7 @@ void test_channel_time_point_conversion() {
 
 }
 
-void test_channel_time_system_specific_conversions() {
+void test_rs_io_time_system_specific_conversions() {
 
     using fsec = duration<double>;
     using days = duration<int64_t, std::ratio<86400>>;

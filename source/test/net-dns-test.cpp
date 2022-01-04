@@ -1,13 +1,13 @@
-#include "rs-channel/net.hpp"
-#include "rs-channel/channel.hpp"
+#include "rs-io/net.hpp"
+#include "rs-io/channel.hpp"
 #include "rs-unit-test.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 
-void test_channel_net_dns_query() {
+void test_rs_io_net_dns_query() {
 
     static const std::string good_name = "en.cppreference.com";
     static const std::string bad_name = "no-such-host.xyz";

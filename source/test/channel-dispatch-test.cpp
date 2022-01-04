@@ -1,4 +1,4 @@
-#include "rs-channel/channel.hpp"
+#include "rs-io/channel.hpp"
 #include "rs-unit-test.hpp"
 #include <atomic>
 #include <chrono>
@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 using namespace std::chrono;
 using namespace std::literals;
 
@@ -25,7 +25,7 @@ namespace {
 
 }
 
-void test_channel_dispatch_empty() {
+void test_rs_io_channel_dispatch_empty() {
 
     Dispatch disp;
     Dispatch::result rc;
@@ -36,7 +36,7 @@ void test_channel_dispatch_empty() {
 
 }
 
-void test_channel_dispatch_sync_close() {
+void test_rs_io_channel_dispatch_sync_close() {
 
     SyncTimerChannel chan(time_interval);
     Dispatch disp;
@@ -53,7 +53,7 @@ void test_channel_dispatch_sync_close() {
 
 }
 
-void test_channel_dispatch_async_close() {
+void test_rs_io_channel_dispatch_async_close() {
 
     TimerChannel chan(time_interval);
     Dispatch disp;
@@ -70,7 +70,7 @@ void test_channel_dispatch_async_close() {
 
 }
 
-void test_channel_dispatch_sync_exception() {
+void test_rs_io_channel_dispatch_sync_exception() {
 
     SyncTimerChannel chan(time_interval);
     Dispatch disp;
@@ -87,7 +87,7 @@ void test_channel_dispatch_sync_exception() {
 
 }
 
-void test_channel_dispatch_async_exception() {
+void test_rs_io_channel_dispatch_async_exception() {
 
     TimerChannel chan(time_interval);
     Dispatch disp;
@@ -104,7 +104,7 @@ void test_channel_dispatch_async_exception() {
 
 }
 
-void test_channel_dispatch_multiple_sync_exception() {
+void test_rs_io_channel_dispatch_multiple_sync_exception() {
 
     SyncTimerChannel chan1(time_interval);
     SyncTimerChannel chan2(time_interval);
@@ -127,7 +127,7 @@ void test_channel_dispatch_multiple_sync_exception() {
 
 }
 
-void test_channel_dispatch_multiple_async_exception() {
+void test_rs_io_channel_dispatch_multiple_async_exception() {
 
     TimerChannel chan1(time_interval);
     TimerChannel chan2(time_interval);
@@ -150,7 +150,7 @@ void test_channel_dispatch_multiple_async_exception() {
 
 }
 
-void test_channel_dispatch_heterogeneous_sync_exception() {
+void test_rs_io_channel_dispatch_heterogeneous_sync_exception() {
 
     SyncTimerChannel chan1(time_interval);
     TimerChannel chan2(time_interval);
@@ -173,7 +173,7 @@ void test_channel_dispatch_heterogeneous_sync_exception() {
 
 }
 
-void test_channel_dispatch_heterogeneous_async_exception() {
+void test_rs_io_channel_dispatch_heterogeneous_async_exception() {
 
     SyncTimerChannel chan1(time_interval);
     TimerChannel chan2(time_interval);
@@ -196,7 +196,7 @@ void test_channel_dispatch_heterogeneous_async_exception() {
 
 }
 
-void test_channel_dispatch_async_message_channel() {
+void test_rs_io_channel_dispatch_async_message_channel() {
 
     QueueChannel<int> chan;
     Dispatch disp;
@@ -221,7 +221,7 @@ void test_channel_dispatch_async_message_channel() {
 
 }
 
-void test_channel_dispatch_async_stream_channel() {
+void test_rs_io_channel_dispatch_async_stream_channel() {
 
     BufferChannel chan;
     Dispatch disp;

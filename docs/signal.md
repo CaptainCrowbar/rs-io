@@ -1,10 +1,10 @@
 # Signal Handling
 
-_[Channel Library by Ross Smith](index.html)_
+_[I/O Library by Ross Smith](index.html)_
 
 ```c++
-#include "rs-channel/signal.hpp"
-namespace RS::Channel;
+#include "rs-io/signal.hpp"
+namespace RS::IO;
 ```
 
 ## Contents

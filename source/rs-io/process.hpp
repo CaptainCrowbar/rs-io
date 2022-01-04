@@ -1,10 +1,10 @@
 #pragma once
 
-#include "rs-channel/channel.hpp"
+#include "rs-io/channel.hpp"
 #include <atomic>
 #include <string>
 
-namespace RS::Channel {
+namespace RS::IO {
 
     // Spawned process channels
 

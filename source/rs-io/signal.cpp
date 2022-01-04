@@ -1,4 +1,4 @@
-#include "rs-channel/signal.hpp"
+#include "rs-io/signal.hpp"
 #include <algorithm>
 #include <chrono>
 #include <map>
@@ -8,7 +8,7 @@
 
 using namespace std::chrono;
 
-namespace RS::Channel {
+namespace RS::IO {
 
     namespace {
 

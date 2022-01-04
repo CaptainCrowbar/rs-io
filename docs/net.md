@@ -1,10 +1,10 @@
 # TCP/IP Networking
 
-_[Channel Library by Ross Smith](index.html)_
+_[I/O Library by Ross Smith](index.html)_
 
 ```c++
-#include "rs-channel/net.hpp"
-namespace RS::Channel;
+#include "rs-io/net.hpp"
+namespace RS::IO;
 ```
 
 ## Contents
@@ -183,7 +183,7 @@ ignored.
 
 ### Address literals
 
-All of these are in `namespace RS::Channel::Literals`.
+All of these are in `namespace RS::IO::Literals`.
 
 ```c++
 IPv4 operator""_ip4(const char* p, size_t n);

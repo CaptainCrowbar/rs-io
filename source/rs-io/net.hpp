@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rs-channel/channel.hpp"
+#include "rs-io/channel.hpp"
 #include <atomic>
 #include <cstring>
 #include <functional>
@@ -19,7 +19,7 @@
     #include <ws2tcpip.h>
 #endif
 
-namespace RS::Channel {
+namespace RS::IO {
 
     namespace Detail {
 
@@ -304,15 +304,33 @@ namespace RS::Channel {
         std::atomic<bool> open_ {true};
         void do_erase(Channel& c) noexcept;
         void do_insert(Channel& c, NativeSocket s);
-        static int do_select(NativeSocket* sockets, size_t n, duration t = {}, size_t* index = nullptr); // +1 = ready, 0 = timeout, -1 = socket closed
+        static int do_select(NativeSocket* sockets, size_t n, duration t = {}, size_t* index = nullptr);
+            // +1 = ready, 0 = timeout, -1 = socket closed
     };
 
 }
 
 namespace std {
 
-    template <> struct hash<RS::Channel::IPv4> { size_t operator()(const RS::Channel::IPv4& t) const noexcept { return t.hash(); } };
-    template <> struct hash<RS::Channel::IPv6> { size_t operator()(const RS::Channel::IPv6& t) const noexcept { return t.hash(); } };
-    template <> struct hash<RS::Channel::SocketAddress> { size_t operator()(const RS::Channel::SocketAddress& t) const noexcept { return t.hash(); } };
+    template <>
+    struct hash<RS::IO::IPv4> {
+        size_t operator()(const RS::IO::IPv4& t) const noexcept {
+            return t.hash();
+        }
+    };
+
+    template <>
+    struct hash<RS::IO::IPv6> {
+        size_t operator()(const RS::IO::IPv6& t) const noexcept {
+            return t.hash();
+        }
+    };
+
+    template <>
+    struct hash<RS::IO::SocketAddress> {
+        size_t operator()(const RS::IO::SocketAddress& t) const noexcept {
+            return t.hash();
+        }
+    };
 
 }

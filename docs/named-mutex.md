@@ -1,10 +1,10 @@
 # Named Mutex
 
-_[Channel Library by Ross Smith](index.html)_
+_[I/O Library by Ross Smith](index.html)_
 
 ```c++
-#include "rs-channel/named-mutex.hpp"
-namespace RS::Channel;
+#include "rs-io/named-mutex.hpp"
+namespace RS::IO;
 ```
 
 ## Named mutex class

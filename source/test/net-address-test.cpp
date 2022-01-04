@@ -1,11 +1,11 @@
-#include "rs-channel/net.hpp"
-#include "rs-channel/channel.hpp"
+#include "rs-io/net.hpp"
+#include "rs-io/channel.hpp"
 #include "rs-unit-test.hpp"
 #include <stdexcept>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 
-void test_channel_net_ipv4() {
+void test_rs_io_net_ipv4() {
 
     TEST_EQUAL(sizeof(IPv4), 4u);
 
@@ -73,7 +73,7 @@ void test_channel_net_ipv4() {
 
 }
 
-void test_channel_net_ipv6() {
+void test_rs_io_net_ipv6() {
 
     TEST_EQUAL(sizeof(IPv6), 16u);
 
@@ -147,7 +147,7 @@ void test_channel_net_ipv6() {
 
 }
 
-void test_channel_net_socket_address() {
+void test_rs_io_net_socket_address() {
 
     SocketAddress sa;
 
@@ -206,9 +206,9 @@ void test_channel_net_socket_address() {
 
 }
 
-void test_channel_net_ip_literals() {
+void test_rs_io_net_ip_literals() {
 
-    using namespace RS::Channel::Literals;
+    using namespace RS::IO::Literals;
 
     IPv4 ip4;
     IPv6 ip6;

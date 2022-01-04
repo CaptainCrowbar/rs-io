@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rs-channel/time.hpp"
+#include "rs-io/time.hpp"
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace RS::Channel {
+namespace RS::IO {
 
     // Implementation details
 

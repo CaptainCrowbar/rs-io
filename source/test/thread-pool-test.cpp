@@ -1,4 +1,4 @@
-#include "rs-channel/thread-pool.hpp"
+#include "rs-io/thread-pool.hpp"
 #include "rs-unit-test.hpp"
 #include <algorithm>
 #include <chrono>
@@ -9,10 +9,10 @@
 #include <string>
 #include <thread>
 
-using namespace RS::Channel;
+using namespace RS::IO;
 using namespace std::chrono;
 
-void test_channel_thread_pool_class() {
+void test_rs_io_thread_pool_class() {
 
     ThreadPool pool;
     std::string expect, log;
@@ -57,7 +57,7 @@ void test_channel_thread_pool_class() {
 
 }
 
-void test_channel_thread_pool_timing() {
+void test_rs_io_thread_pool_timing() {
 
     static constexpr int iterations = 100'000;
 

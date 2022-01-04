@@ -5,14 +5,14 @@
 #include <string>
 #include <array>
 
-namespace RS::Channel {
+namespace RS::IO {
 
     inline std::array<int, 3> version() noexcept {
-        return {{ 0, 1, 9 }};
+        return {{ 0, 2, 1 }};
     }
 
     inline std::string version_string() {
-        return "0.1.9";
+        return "0.2.1";
     }
 
 }

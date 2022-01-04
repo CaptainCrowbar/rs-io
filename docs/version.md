@@ -1,10 +1,10 @@
 # Version Information
 
-_[Channel Library by Ross Smith](index.html)_
+_[I/O Library by Ross Smith](index.html)_
 
 ```c++
-#include "rs-channel/version.hpp"
-namespace RS::Skeleton;
+#include "rs-io/version.hpp"
+namespace RS::IO;
 ```
 
 This header supplies library version information.

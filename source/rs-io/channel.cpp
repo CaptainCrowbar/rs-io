@@ -1,4 +1,4 @@
-#include "rs-channel/channel.hpp"
+#include "rs-io/channel.hpp"
 #include <algorithm>
 #include <cstring>
 #include <stdexcept>
@@ -6,7 +6,7 @@
 using namespace std::chrono;
 using namespace std::literals;
 
-namespace RS::Channel {
+namespace RS::IO {
 
     // Class Channel
 

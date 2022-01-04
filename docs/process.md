@@ -1,10 +1,10 @@
 # Process Control
 
-_[Channel Library by Ross Smith](index.html)_
+_[I/O Library by Ross Smith](index.html)_
 
 ```c++
-#include "rs-channel/process.hpp"
-namespace RS::Channel;
+#include "rs-io/process.hpp"
+namespace RS::IO;
 ```
 
 ## Contents

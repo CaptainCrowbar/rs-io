@@ -1,23 +1,23 @@
-# Message Dispatch Library
+# I/O Library
 
 By Ross Smith
 
-_[GitHub repository](https://github.com/CaptainCrowbar/rs-channel)_
+_[GitHub repository](https://github.com/CaptainCrowbar/rs-io)_
 
 ## Overview
 
 ```c++
-#include "rs-channel.hpp"
-namespace RS::Channel;
+#include "rs-io.hpp"
+namespace RS::IO;
 ```
 
-This library contains some facilities for message dispatch between threads,
-and related multithreading and interprocess communication facilities.
+This library contains some facilities for I/O and related concepts, including
+message dispatch, multithreading, and interprocess communication.
 
 The CMake file includes an `install` target that copies the compiled library
 and headers into `/usr/local/bin` and `/usr/local/include` or the equivalent.
 Headers can be included individually as required, or the entire library can
-be included using `"rs-channel.hpp"`.
+be included using `"rs-io.hpp"`.
 
 My [unit test library](https://github.com/CaptainCrowbar/rs-unit-test) is used
 for this library's unit tests. This a header-only library, and is not
@@ -26,10 +26,15 @@ tests.
 
 ## Index
 
-* [Time utilities](time.html)
-* [Channel-based message dispatch](channel.html)
-* [TCP/IP networking](net.html)
-* [Process control](process.html)
-* [Signal handling](signal.html)
-* [Named mutex](named-mutex.html)
-* [Thread pool](thread-pool.html)
+* General utilities
+    * [Time utilities](time.html)
+* Multithreading
+    * [Thread pool](thread-pool.html)
+* Message dispatch
+    * [Channel-based message dispatch](channel.html)
+    * [Signal handling](signal.html)
+* Interprocess communication
+    * [Named mutex](named-mutex.html)
+    * [Process control](process.html)
+* Networking
+    * [TCP/IP networking](net.html)

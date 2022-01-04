@@ -1,5 +1,5 @@
-#include "rs-channel/named-mutex.hpp"
-#include "rs-channel/time.hpp"
+#include "rs-io/named-mutex.hpp"
+#include "rs-io/time.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <ctime>
@@ -16,7 +16,7 @@
 using namespace std::chrono;
 using namespace std::literals;
 
-namespace RS::Channel {
+namespace RS::IO {
 
     namespace {
 
