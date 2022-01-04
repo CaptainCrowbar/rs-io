@@ -38,13 +38,13 @@ namespace RS::IO {
     public InputIterator<LineIterator, const std::string> {
     public:
         LineIterator() = default;
-        explicit LineIterator(IoBase& io): iop(&io), line() { ++*this; }
-        const std::string& operator*() const noexcept { return line; }
+        explicit LineIterator(IoBase& io): io_(&io), line_() { ++*this; }
+        const std::string& operator*() const noexcept { return line_; }
         LineIterator& operator++();
-        bool operator==(const LineIterator& rhs) const noexcept { return iop == rhs.iop; }
+        bool operator==(const LineIterator& rhs) const noexcept { return io_ == rhs.io_; }
     private:
-        IoBase* iop = nullptr;
-        std::string line;
+        IoBase* io_ = nullptr;
+        std::string line_;
     };
 
     // I/O abstract base class

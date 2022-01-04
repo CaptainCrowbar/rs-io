@@ -63,10 +63,10 @@ namespace RS::IO {
     // Class LineIterator
 
     LineIterator& LineIterator::operator++() {
-        if (iop) {
-            line = iop->read_line();
-            if (line.empty())
-                iop = nullptr;
+        if (io_) {
+            line_ = io_->read_line();
+            if (line_.empty())
+                io_ = nullptr;
         }
         return *this;
     }
