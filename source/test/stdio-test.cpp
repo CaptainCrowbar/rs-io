@@ -6,7 +6,6 @@
 #include <iterator>
 #include <memory>
 #include <string>
-#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -31,49 +30,45 @@ void test_rs_io_stdio_cstdio() {
     TRY(file.remove());
     TEST(! file.exists());
     TEST(! io.is_open());
-    TEST(! io.ok());
 
     TRY(io = Cstdio(file, IoMode::write));
     TEST(io.is_open());
-    TEST(io.ok());
     TRY(io.writes("Hello world\n"));
-    TEST(io.ok());
     TRY(io.writes("Goodbye\n"));
-    TEST(io.ok());
     TRY(io.close());
     TEST(! io.is_open());
     TEST(file.exists());
 
     text.clear();
     TRY(io = Cstdio(file));
-    TRY(n = io.read_some(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
-    TRY(n = io.read_some(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
-    TRY(n = io.read_some(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(n = io.read_some(text, 12));  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
+    TRY(n = io.read_some(text, 8));   TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(n = io.read_some(text, 1));   TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.reads(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-    TRY(text = io.reads(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-    TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.reads(12));  TEST_EQUAL(text, "Hello world\n");
+    TRY(text = io.reads(8));   TEST_EQUAL(text, "Goodbye\n");
+    TRY(text = io.reads(1));   TEST_EQUAL(text, "");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.reads(20));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
-    TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.reads(20));  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(text = io.reads(1));   TEST_EQUAL(text, "");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.reads(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(text = io.reads(100));  TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "Hello world\n");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "Goodbye\n");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.read_all());  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(text = io.read_all());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
@@ -86,19 +81,25 @@ void test_rs_io_stdio_cstdio() {
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 0);
-    TRY(io.seek(12));            TEST(io.ok());
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 12);
-    TRY(text = io.reads(7));  TEST(io.ok());  TEST_EQUAL(text, "Goodbye");
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 19);
-    TRY(io.seek(-13));           TEST(io.ok());
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 6);
-    TRY(text = io.reads(5));  TEST(io.ok());  TEST_EQUAL(text, "world");
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 11);
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 0);
+    TRY(io.seek(12));
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 12);
+    TRY(text = io.reads(7));
+    TEST_EQUAL(text, "Goodbye");
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 19);
+    TRY(io.seek(-13));
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 6);
+    TRY(text = io.reads(5));
+    TEST_EQUAL(text, "world");
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 11);
     TRY(io.close());
 
-    TRY(io = Cstdio(no_file, IoMode::read));
-    TEST_THROW(io.check(), std::system_error);
+    TEST_THROW(io = Cstdio(no_file, IoMode::read), IoError);
 
     TRY(io = Cstdio(file, IoMode::write));
     TRY(io.format("Agent {0}\n", 86));
@@ -107,10 +108,10 @@ void test_rs_io_stdio_cstdio() {
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 86\n");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 99\n");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "**********");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "Agent 86\n");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "Agent 99\n");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "**********");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "");
     TRY(io.close());
 
 }
@@ -128,44 +129,40 @@ void test_rs_io_stdio_fdio() {
     TRY(file.remove());
     TEST(! file.exists());
     TEST(! io.is_open());
-    TEST(! io.ok());
 
     TRY(io = Fdio(file, IoMode::write));
     TEST(io.is_open());
-    TEST(io.ok());
     TRY(io.writes("Hello world\n"));
-    TEST(io.ok());
     TRY(io.writes("Goodbye\n"));
-    TEST(io.ok());
     TRY(io.close());
     TEST(! io.is_open());
     TEST(file.exists());
 
     text.clear();
     TRY(io = Fdio(file));
-    TRY(n = io.read_some(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
-    TRY(n = io.read_some(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
-    TRY(n = io.read_some(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(n = io.read_some(text, 12));  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
+    TRY(n = io.read_some(text, 8));   TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(n = io.read_some(text, 1));   TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Fdio(file));
-    TRY(text = io.reads(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-    TRY(text = io.reads(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-    TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.reads(12));  TEST_EQUAL(text, "Hello world\n");
+    TRY(text = io.reads(8));   TEST_EQUAL(text, "Goodbye\n");
+    TRY(text = io.reads(1));   TEST_EQUAL(text, "");
     TRY(io.close());
 
     TRY(io = Fdio(file));
-    TRY(text = io.reads(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(text = io.reads(100));  TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Fdio(file));
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "Hello world\n");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "Goodbye\n");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "");
     TRY(io.close());
 
     TRY(io = Fdio(file));
-    TRY(text = io.read_all());  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(text = io.read_all());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Fdio(file));
@@ -178,19 +175,25 @@ void test_rs_io_stdio_fdio() {
     TRY(io.close());
 
     TRY(io = Fdio(file));
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 0);
-    TRY(io.seek(12));            TEST(io.ok());
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 12);
-    TRY(text = io.reads(7));  TEST(io.ok());  TEST_EQUAL(text, "Goodbye");
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 19);
-    TRY(io.seek(-13));           TEST(io.ok());
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 6);
-    TRY(text = io.reads(5));  TEST(io.ok());  TEST_EQUAL(text, "world");
-    TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 11);
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 0);
+    TRY(io.seek(12));
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 12);
+    TRY(text = io.reads(7));
+    TEST_EQUAL(text, "Goodbye");
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 19);
+    TRY(io.seek(-13));
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 6);
+    TRY(text = io.reads(5));
+    TEST_EQUAL(text, "world");
+    TRY(offset = io.tell());
+    TEST_EQUAL(offset, 11);
     TRY(io.close());
 
-    TRY(io = Fdio(no_file, IoMode::read));
-    TEST_THROW(io.check(), std::system_error);
+    TEST_THROW(io = Fdio(no_file, IoMode::read), IoError);
 
     TRY(io = Fdio(file, IoMode::write));
     TRY(io.format("Agent {0}\n", 86));
@@ -199,10 +202,10 @@ void test_rs_io_stdio_fdio() {
     TRY(io.close());
 
     TRY(io = Fdio(file));
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 86\n");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 99\n");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "**********");
-    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "Agent 86\n");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "Agent 99\n");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "**********");
+    TRY(text = io.read_line());  TEST_EQUAL(text, "");
     TRY(io.close());
 
 }
@@ -235,49 +238,45 @@ void test_rs_io_stdio_winio() {
         TRY(file.remove());
         TEST(! file.exists());
         TEST(! io.is_open());
-        TEST(! io.ok());
 
         TRY(io = Winio(file, IoMode::write));
         TEST(io.is_open());
-        TEST(io.ok());
         TRY(io.writes("Hello world\n"));
-        TEST(io.ok());
         TRY(io.writes("Goodbye\n"));
-        TEST(io.ok());
         TRY(io.close());
         TEST(! io.is_open());
         TEST(file.exists());
 
         text.clear();
         TRY(io = Winio(file));
-        TRY(n = io.read_some(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
-        TRY(n = io.read_some(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
-        TRY(n = io.read_some(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(n = io.read_some(text, 12));  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
+        TRY(n = io.read_some(text, 8));   TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(n = io.read_some(text, 1));   TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.reads(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-        TRY(text = io.reads(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-        TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+        TRY(text = io.reads(12));  TEST_EQUAL(text, "Hello world\n");
+        TRY(text = io.reads(8));   TEST_EQUAL(text, "Goodbye\n");
+        TRY(text = io.reads(1));   TEST_EQUAL(text, "");
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.reads(20));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
-        TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+        TRY(text = io.reads(20));  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(text = io.reads(1));   TEST_EQUAL(text, "");
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.reads(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(text = io.reads(100));  TEST_EQUAL(text, "Hello world\nGoodbye\n");
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-        TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-        TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
+        TRY(text = io.read_line());  TEST_EQUAL(text, "Hello world\n");
+        TRY(text = io.read_line());  TEST_EQUAL(text, "Goodbye\n");
+        TRY(text = io.read_line());  TEST_EQUAL(text, "");
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.read_all());  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(text = io.read_all());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
         TRY(io.close());
 
         TRY(io = Winio(file));
@@ -301,8 +300,7 @@ void test_rs_io_stdio_winio() {
         TRY(offset = io.tell());     TEST_EQUAL(offset, 11);
         TRY(io.close());
 
-        TRY(io = Winio(no_file, IoMode::read));
-        TEST_THROW(io.check(), std::system_error);
+        TEST_THROW(io = Winio(no_file, IoMode::read), IoError);
 
         TRY(io = Winio(file, IoMode::write));
         TRY(io.format("Agent {0}\n", 86));
@@ -311,10 +309,10 @@ void test_rs_io_stdio_winio() {
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 86\n");
-        TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 99\n");
-        TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "**********");
-        TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
+        TRY(text = io.read_line());  TEST_EQUAL(text, "Agent 86\n");
+        TRY(text = io.read_line());  TEST_EQUAL(text, "Agent 99\n");
+        TRY(text = io.read_line());  TEST_EQUAL(text, "**********");
+        TRY(text = io.read_line());  TEST_EQUAL(text, "");
         TRY(io.close());
 
     #endif

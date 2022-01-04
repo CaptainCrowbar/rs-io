@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 # and propagate the new version to version.hpp.
 
 project(rs-io
-    VERSION 0.2.9
+    VERSION 0.2.10
     LANGUAGES CXX
 )
 

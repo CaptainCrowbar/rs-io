@@ -12,7 +12,7 @@
 
 namespace RS::IO {
 
-    // I/O abstract base class
+    // Supporting types
 
     RS_DEFINE_ENUM_CLASS(IoMode, int, 1,
         read,
@@ -22,6 +22,17 @@ namespace RS::IO {
         open_always,
         open_existing
     )
+
+    class IoError:
+    public std::system_error {
+    public:
+        explicit IoError(int err = 0, const std::error_category& cat = std::generic_category());
+        explicit IoError(int err, const std::string& details, const std::error_category& cat = std::generic_category());
+        explicit IoError(std::errc condition);
+        explicit IoError(std::errc condition, const std::string& details);
+    };
+
+    // I/O abstract base class
 
     class IoBase {
     public:
@@ -39,55 +50,34 @@ namespace RS::IO {
             std::string line;
         };
 
-        virtual ~IoBase() = default;
-        IoBase(const IoBase&) = delete;
-        IoBase(IoBase&&) = default;
-        IoBase& operator=(const IoBase&) = delete;
-        IoBase& operator=(IoBase&&) = default;
+        virtual ~IoBase() noexcept {}
 
-        virtual void close() noexcept = 0;
-        virtual void flush() noexcept = 0;
-        virtual int getc() noexcept;
-        virtual bool is_open() const noexcept = 0;
+        virtual void close() = 0;
+        virtual void flush() = 0;
+        virtual int getc();
+        virtual bool is_open() const = 0;
         virtual void putc(char c) { write(&c, 1); }
-        virtual size_t read(void* ptr, size_t maxlen) noexcept = 0;
+        virtual size_t read(void* ptr, size_t maxlen) = 0;
         virtual std::string read_line();
-        virtual void seek(ptrdiff_t offset, int which = SEEK_CUR) noexcept = 0;
-        virtual ptrdiff_t tell() noexcept = 0;
+        virtual void seek(ptrdiff_t offset, int which = SEEK_CUR) = 0;
+        virtual ptrdiff_t tell() = 0;
         virtual size_t write(const void* ptr, size_t len) = 0;
 
-        void check(const std::string& detail = "") const;
-        void clear_error() noexcept { set_error(0); }
-        std::error_code error() const noexcept { return status_; }
-        template <typename... Args> void format(const std::string& pattern, Args&&... args)
-            { writes(Format::format(pattern, std::forward<Args>(args)...)); }
         Irange<line_iterator> lines() { return {line_iterator(*this), {}}; }
-        bool ok() const noexcept { return ! status_ && is_open(); }
-        template <typename... Args> void print(Args&&... args)
-            { write_line(Format::prints(std::forward<Args>(args)...)); }
         std::string read_all();
         size_t read_some(std::string& buf, size_t maxlen);
-        std::string reads(size_t maxlen);
+        std::string reads(size_t maxlen = 1'048'576);
         void write_chars(size_t n, char c);
         void write_line(const std::string& str = {});
         size_t writes(const std::string& str);
 
-    protected:
+        template <typename... Args> void format(const std::string& pattern, Args&&... args) {
+            writes(Format::format(pattern, std::forward<Args>(args)...));
+        }
 
-        static constexpr const char* null_device =
-            #ifdef _XOPEN_SOURCE
-                "/dev/null";
-            #else
-                "NUL:";
-            #endif
-
-        IoBase() = default;
-
-        void set_error(int err, const std::error_category& cat = std::generic_category()) noexcept;
-
-    private:
-
-        std::error_code status_;
+        template <typename... Args> void print(Args&&... args) {
+            write_line(Format::prints(std::forward<Args>(args)...));
+        }
 
     };
 
@@ -110,26 +100,26 @@ namespace RS::IO {
         Cstdio& operator=(const Cstdio&) = delete;
         Cstdio& operator=(Cstdio&&) = default;
 
-        void close() noexcept override;
-        void flush() noexcept override;
-        int getc() noexcept override;
-        bool is_open() const noexcept override { return bool(fp_); }
+        void close() override;
+        void flush() override;
+        int getc() override;
+        bool is_open() const override { return bool(fp_); }
         void putc(char c) override;
-        size_t read(void* ptr, size_t maxlen) noexcept override;
+        size_t read(void* ptr, size_t maxlen) override;
         std::string read_line() override;
-        void seek(ptrdiff_t offset, int which = SEEK_CUR) noexcept override;
-        ptrdiff_t tell() noexcept override;
+        void seek(ptrdiff_t offset, int which = SEEK_CUR) override;
+        ptrdiff_t tell() override;
         size_t write(const void* ptr, size_t len) override;
 
-        int fd() const noexcept;
+        int fd() const;
         FILE* get() const noexcept { return fp_.get(); }
         FILE* release() noexcept { return fp_.release(); }
         void ungetc(char c);
 
-        static Cstdio null() noexcept;
-        static Cstdio std_input() noexcept { return Cstdio(stdin); }
-        static Cstdio std_output() noexcept { return Cstdio(stdout); }
-        static Cstdio std_error() noexcept { return Cstdio(stderr); }
+        static Cstdio null();
+        static Cstdio std_input() { return Cstdio(stdin); }
+        static Cstdio std_output() { return Cstdio(stdout); }
+        static Cstdio std_error() { return Cstdio(stderr); }
 
     private:
 
@@ -160,24 +150,24 @@ namespace RS::IO {
         Fdio& operator=(const Fdio&) = delete;
         Fdio& operator=(Fdio&&) = default;
 
-        void close() noexcept override;
-        void flush() noexcept override;
-        bool is_open() const noexcept override { return bool(fd_); }
-        size_t read(void* ptr, size_t maxlen) noexcept override;
-        void seek(ptrdiff_t offset, int which = SEEK_CUR) noexcept override;
-        ptrdiff_t tell() noexcept override;
+        void close() override;
+        void flush() override;
+        bool is_open() const override { return bool(fd_); }
+        size_t read(void* ptr, size_t maxlen) override;
+        void seek(ptrdiff_t offset, int which = SEEK_CUR) override;
+        ptrdiff_t tell() override;
         size_t write(const void* ptr, size_t len) override;
 
-        Fdio dup() noexcept;
-        Fdio dup(int f) noexcept;
+        Fdio dup();
+        Fdio dup(int f);
         int get() const noexcept { return fd_.get(); }
         int release() noexcept { return fd_.release(); }
 
-        static Fdio null() noexcept;
+        static Fdio null();
         static std::pair<Fdio, Fdio> pipe(size_t winmem = 65'536);
-        static Fdio std_input() noexcept { return Fdio(0); }
-        static Fdio std_output() noexcept { return Fdio(1); }
-        static Fdio std_error() noexcept { return Fdio(2); }
+        static Fdio std_input() { return Fdio(0); }
+        static Fdio std_output() { return Fdio(1); }
+        static Fdio std_error() { return Fdio(2); }
 
     private:
 
@@ -219,21 +209,21 @@ namespace RS::IO {
             Winio& operator=(const Winio&) = delete;
             Winio& operator=(Winio&&) = default;
 
-            void close() noexcept override;
-            void flush() noexcept override;
-            bool is_open() const noexcept override { return bool(fh_); }
-            size_t read(void* ptr, size_t maxlen) noexcept override;
-            void seek(ptrdiff_t offset, int which = SEEK_CUR) noexcept override;
-            ptrdiff_t tell() noexcept override;
+            void close() override;
+            void flush() override;
+            bool is_open() const override { return bool(fh_); }
+            size_t read(void* ptr, size_t maxlen) override;
+            void seek(ptrdiff_t offset, int which = SEEK_CUR) override;
+            ptrdiff_t tell() override;
             size_t write(const void* ptr, size_t len) override;
 
             void* get() const noexcept { return fh_.get(); }
             void* release() noexcept { return fh_.release(); }
 
-            static Winio null() noexcept;
-            static Winio std_input() noexcept { return Winio(GetStdHandle(STD_INPUT_HANDLE), false); }
-            static Winio std_output() noexcept { return Winio(GetStdHandle(STD_OUTPUT_HANDLE), false); }
-            static Winio std_error() noexcept { return Winio(GetStdHandle(STD_ERROR_HANDLE), false); }
+            static Winio null();
+            static Winio std_input() { return Winio(GetStdHandle(STD_INPUT_HANDLE), false); }
+            static Winio std_output() { return Winio(GetStdHandle(STD_OUTPUT_HANDLE), false); }
+            static Winio std_error() { return Winio(GetStdHandle(STD_ERROR_HANDLE), false); }
 
         private:
 
