@@ -1,7 +1,7 @@
 #include "rs-io/stdio.hpp"
 #include <algorithm>
 #include <cerrno>
-#include <cstring>
+#include <cstdio>
 #include <fcntl.h>
 #include <random>
 
@@ -29,61 +29,8 @@ namespace RS::IO {
 
     namespace {
 
-        #if defined(__APPLE__)
-
-            std::string path_from_fd(int fd) {
-                if (fd == -1)
-                    return {};
-                std::string buf(PATH_MAX, '\0');
-                auto rc = ::fcntl(fd, F_GETPATH, buf.data());
-                if (rc >= 0)
-                    return buf.data();
-                else
-                    return {};
-            }
-
-        #elif defined(__CYGWIN__) || defined(__linux__)
-
-            std::string path_from_fd(int fd) {
-                if (fd == -1)
-                    return {};
-                std::string link = "/proc/self/fd/" + std::to_string(fd);
-                std::string path(256, '\0');
-                bool ok = false;
-                while (! ok) {
-                    auto rc = ::readlink(link.data(), path.data(), path.size());
-                    if (rc < 0)
-                        return {};
-                    ok = size_t(rc) < path.size();
-                    path.resize(rc);
-                }
-                return path;
-            }
-
-        #elif defined(_WIN32)
-
-            std::wstring path_from_handle(HANDLE handle) {
-                if (! handle || handle == INVALID_HANDLE_VALUE)
-                    return {};
-                std::wstring path(256, L'\0');
-                bool ok = false;
-                while (! ok) {
-                    auto rc = GetFinalPathNameByHandleW(handle, path.data(), DWORD(path.size()), 0);
-                    if (rc == 0)
-                        return {};
-                    ok = rc < path.size();
-                    path.resize(rc);
-                }
-                return path;
-            }
-
-        #else
-
-            std::string path_from_fd(int /*fd*/) {
-                return {};
-            }
-
-        #endif
+        constexpr size_t block_size = 65'536;
+        constexpr size_t small_block = 256;
 
     }
 
@@ -107,17 +54,6 @@ namespace RS::IO {
         return s;
     }
 
-    void IoBase::write_n(size_t n, char c) {
-        static constexpr size_t block = 16384;
-        std::string buf(std::min(n, block), c);
-        size_t quo = n / block;
-        size_t rem = n % block;
-        for (size_t i = 0; i < quo; ++i)
-            write(buf.data(), block);
-        if (rem != 0)
-            write(buf.data(), rem);
-    }
-
     void IoBase::check(const std::string& detail) const {
         if (status_) {
             if (detail.empty())
@@ -128,36 +64,45 @@ namespace RS::IO {
     }
 
     std::string IoBase::read_all() {
-        static constexpr size_t block = 16384;
-        std::string s;
-        while (read_n(s, block)) {}
-        return s;
+        std::string buf;
+        while (read_some(buf, block_size)) {}
+        return buf;
     }
 
-    size_t IoBase::read_n(std::string& s, size_t maxlen) {
-        size_t offset = s.size();
-        s.resize(offset + maxlen);
-        size_t n = read(&s[0] + offset, maxlen);
-        s.resize(offset + n);
+    size_t IoBase::read_some(std::string& buf, size_t maxlen) {
+        size_t offset = buf.size();
+        buf.resize(offset + maxlen);
+        size_t n = read(&buf[0] + offset, maxlen);
+        buf.resize(offset + n);
         return n;
     }
 
-    std::string IoBase::read_str(size_t maxlen) {
+    std::string IoBase::reads(size_t maxlen) {
         std::string s(maxlen, 0);
         s.resize(read(&s[0], maxlen));
         return s;
     }
 
-    void IoBase::write_line(std::string_view str) {
+    void IoBase::write_chars(size_t n, char c) {
+        std::string buf(std::min(n, block_size), c);
+        size_t quo = n / block_size;
+        size_t rem = n % block_size;
+        for (size_t i = 0; i < quo; ++i)
+            write(buf.data(), block_size);
+        if (rem != 0)
+            write(buf.data(), rem);
+    }
+
+    void IoBase::write_line(const std::string& str) {
         if (str.empty())
             putc('\n');
         else if (str.back() == '\n')
-            write_str(str);
+            writes(str);
         else
-            write_str(std::string(str) + '\n');
+            writes(std::string(str) + '\n');
     }
 
-    size_t IoBase::write_str(std::string_view str) {
+    size_t IoBase::writes(const std::string& str) {
         static constexpr char dummy = '\0';
         const char* ptr = str.empty() ? &dummy : str.data();
         size_t ofs = 0, len = str.size();
@@ -256,19 +201,6 @@ namespace RS::IO {
         return c;
     }
 
-    Path Cstdio::get_path() const {
-        #ifdef _XOPEN_SOURCE
-            return path_from_fd(fd());
-        #else
-            return path_from_handle(HANDLE(_get_osfhandle(fd())));
-        #endif
-    }
-
-    bool Cstdio::is_terminal() const noexcept {
-        auto desc = fd();
-        return desc != -1 && IO_FUNCTION(isatty)(desc);
-    }
-
     void Cstdio::putc(char c) {
         errno = 0;
         ::fputc(int(uint8_t(c)), fp_);
@@ -283,13 +215,12 @@ namespace RS::IO {
     }
 
     std::string Cstdio::read_line() {
-        static constexpr size_t block = 256;
         std::string buf;
         for (;;) {
             size_t offset = buf.size();
-            buf.resize(offset + block, '\0');
+            buf.resize(offset + small_block, '\0');
             errno = 0;
-            auto rc = ::fgets(&buf[0] + offset, block, fp_);
+            auto rc = ::fgets(&buf[0] + offset, small_block, fp_);
             set_error(errno);
             if (rc == nullptr)
                 return buf.substr(0, offset);
@@ -297,7 +228,7 @@ namespace RS::IO {
             if (lfpos != npos)
                 return buf.substr(0, lfpos + 1);
             size_t ntpos = buf.find_last_not_of('\0') + 1;
-            if (ntpos < block - 1)
+            if (ntpos < small_block - 1)
                 return buf.substr(0, ntpos);
             buf.pop_back();
         }
@@ -414,18 +345,6 @@ namespace RS::IO {
             else if (! FlushFileBuffers(h))
                 set_error(GetLastError(), std::system_category());
         #endif
-    }
-
-    Path Fdio::get_path() const {
-        #ifdef _XOPEN_SOURCE
-            return path_from_fd(fd_);
-        #else
-            return path_from_handle(HANDLE(_get_osfhandle(fd_)));
-        #endif
-    }
-
-    bool Fdio::is_terminal() const noexcept {
-        return IO_FUNCTION(isatty)(fd_);
     }
 
     size_t Fdio::read(void* ptr, size_t maxlen) noexcept {
@@ -560,22 +479,6 @@ namespace RS::IO {
                 set_error(GetLastError(), std::system_category());
         }
 
-        Path Winio::get_path() const {
-            return path_from_handle(fh_);
-        }
-
-        bool Winio::is_terminal() const noexcept {
-            auto h = fh_.get();
-            if (h == GetStdHandle(STD_INPUT_HANDLE))
-                return IO_FUNCTION(isatty)(0);
-            else if (h == GetStdHandle(STD_OUTPUT_HANDLE))
-                return IO_FUNCTION(isatty)(1);
-            else if (h == GetStdHandle(STD_ERROR_HANDLE))
-                return IO_FUNCTION(isatty)(2);
-            else
-                return false;
-        }
-
         size_t Winio::read(void* ptr, size_t maxlen) noexcept {
             DWORD n = 0;
             SetLastError(0);
@@ -635,7 +538,7 @@ namespace RS::IO {
     }
 
     TempFile::TempFile(const Path& dir, const std::string& prefix) {
-        static constexpr int max_tries = 10;
+        static constexpr int max_tries = 100;
         if (! dir.empty() && ! dir.is_directory())
             throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory));
         std::random_device dev;
@@ -664,13 +567,6 @@ namespace RS::IO {
             try { close(); } catch (...) {}
             try { where_.remove(); } catch (...) {}
         }
-    }
-
-    Path TempFile::get_path() const {
-        if (where_.empty())
-            return Cstdio::get_path();
-        else
-            return where_;
     }
 
 }

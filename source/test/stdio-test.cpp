@@ -5,8 +5,10 @@
 #include <algorithm>
 #include <iterator>
 #include <memory>
+#include <string>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 using namespace RS::IO;
 
@@ -15,20 +17,6 @@ using namespace RS::IO;
 #else
     #define SLASH "\\"
 #endif
-
-namespace {
-
-    void strip_unc(Path& path) {
-        #ifdef _XOPEN_SOURCE
-            (void)path;
-        #else
-            auto name = path.name();
-            if (name.substr(0, 4) == "\\\\?\\")
-                path = name.substr(4, npos);
-        #endif
-    }
-
-}
 
 void test_rs_io_stdio_cstdio() {
 
@@ -48,9 +36,9 @@ void test_rs_io_stdio_cstdio() {
     TRY(io = Cstdio(file, IoBase::mode::write_only));
     TEST(io.is_open());
     TEST(io.ok());
-    TRY(io.write_str("Hello world\n"));
+    TRY(io.writes("Hello world\n"));
     TEST(io.ok());
-    TRY(io.write_str("Goodbye\n"));
+    TRY(io.writes("Goodbye\n"));
     TEST(io.ok());
     TRY(io.close());
     TEST(! io.is_open());
@@ -58,24 +46,24 @@ void test_rs_io_stdio_cstdio() {
 
     text.clear();
     TRY(io = Cstdio(file));
-    TRY(n = io.read_n(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
-    TRY(n = io.read_n(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
-    TRY(n = io.read_n(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(n = io.read_some(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
+    TRY(n = io.read_some(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(n = io.read_some(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.read_str(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-    TRY(text = io.read_str(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-    TRY(text = io.read_str(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.reads(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
+    TRY(text = io.reads(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
+    TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.read_str(20));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
-    TRY(text = io.read_str(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.reads(20));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
-    TRY(text = io.read_str(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(text = io.reads(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Cstdio(file));
@@ -101,20 +89,12 @@ void test_rs_io_stdio_cstdio() {
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 0);
     TRY(io.seek(12));            TEST(io.ok());
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 12);
-    TRY(text = io.read_str(7));  TEST(io.ok());  TEST_EQUAL(text, "Goodbye");
+    TRY(text = io.reads(7));  TEST(io.ok());  TEST_EQUAL(text, "Goodbye");
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 19);
     TRY(io.seek(-13));           TEST(io.ok());
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 6);
-    TRY(text = io.read_str(5));  TEST(io.ok());  TEST_EQUAL(text, "world");
+    TRY(text = io.reads(5));  TEST(io.ok());  TEST_EQUAL(text, "world");
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 11);
-    TRY(io.close());
-
-    TRY(io = Cstdio(file));
-    TRY(path = io.get_path());
-    TEST(path.is_absolute());
-    TEST(path.id() == file.id());
-    TRY(strip_unc(path));
-    TEST_EQUAL(path, file.resolve());
     TRY(io.close());
 
     TRY(io = Cstdio(no_file, IoBase::mode::read_only));
@@ -123,11 +103,13 @@ void test_rs_io_stdio_cstdio() {
     TRY(io = Cstdio(file, IoBase::mode::write_only));
     TRY(io.format("Agent {0}\n", 86));
     TRY(io.print("Agent", 99));
+    TRY(io.write_chars(10, '*'));
     TRY(io.close());
 
     TRY(io = Cstdio(file));
     TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 86\n");
     TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 99\n");
+    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "**********");
     TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
     TRY(io.close());
 
@@ -151,9 +133,9 @@ void test_rs_io_stdio_fdio() {
     TRY(io = Fdio(file, IoBase::mode::write_only));
     TEST(io.is_open());
     TEST(io.ok());
-    TRY(io.write_str("Hello world\n"));
+    TRY(io.writes("Hello world\n"));
     TEST(io.ok());
-    TRY(io.write_str("Goodbye\n"));
+    TRY(io.writes("Goodbye\n"));
     TEST(io.ok());
     TRY(io.close());
     TEST(! io.is_open());
@@ -161,19 +143,19 @@ void test_rs_io_stdio_fdio() {
 
     text.clear();
     TRY(io = Fdio(file));
-    TRY(n = io.read_n(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
-    TRY(n = io.read_n(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
-    TRY(n = io.read_n(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(n = io.read_some(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
+    TRY(n = io.read_some(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(n = io.read_some(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Fdio(file));
-    TRY(text = io.read_str(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-    TRY(text = io.read_str(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-    TRY(text = io.read_str(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+    TRY(text = io.reads(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
+    TRY(text = io.reads(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
+    TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
     TRY(io.close());
 
     TRY(io = Fdio(file));
-    TRY(text = io.read_str(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+    TRY(text = io.reads(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
     TRY(io.close());
 
     TRY(io = Fdio(file));
@@ -199,20 +181,12 @@ void test_rs_io_stdio_fdio() {
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 0);
     TRY(io.seek(12));            TEST(io.ok());
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 12);
-    TRY(text = io.read_str(7));  TEST(io.ok());  TEST_EQUAL(text, "Goodbye");
+    TRY(text = io.reads(7));  TEST(io.ok());  TEST_EQUAL(text, "Goodbye");
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 19);
     TRY(io.seek(-13));           TEST(io.ok());
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 6);
-    TRY(text = io.read_str(5));  TEST(io.ok());  TEST_EQUAL(text, "world");
+    TRY(text = io.reads(5));  TEST(io.ok());  TEST_EQUAL(text, "world");
     TRY(offset = io.tell());     TEST(io.ok());  TEST_EQUAL(offset, 11);
-    TRY(io.close());
-
-    TRY(io = Fdio(file));
-    TRY(path = io.get_path());
-    TEST(path.is_absolute());
-    TEST(path.id() == file.id());
-    TRY(strip_unc(path));
-    TEST_EQUAL(path, file.resolve());
     TRY(io.close());
 
     TRY(io = Fdio(no_file, IoBase::mode::read_only));
@@ -221,11 +195,13 @@ void test_rs_io_stdio_fdio() {
     TRY(io = Fdio(file, IoBase::mode::write_only));
     TRY(io.format("Agent {0}\n", 86));
     TRY(io.print("Agent", 99));
+    TRY(io.write_chars(10, '*'));
     TRY(io.close());
 
     TRY(io = Fdio(file));
     TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 86\n");
     TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 99\n");
+    TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "**********");
     TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
     TRY(io.close());
 
@@ -237,9 +213,9 @@ void test_rs_io_stdio_pipe() {
     std::string text;
 
     TRY(pipe = Fdio::pipe());
-    TRY(pipe.second.write_str("Hello world\n"));
-    TRY(pipe.second.write_str("Goodbye\n"));
-    TRY(text = pipe.first.read_str(100));
+    TRY(pipe.second.writes("Hello world\n"));
+    TRY(pipe.second.writes("Goodbye\n"));
+    TRY(text = pipe.first.reads(100));
     TEST_EQUAL(text, "Hello world\nGoodbye\n");
 
 }
@@ -264,9 +240,9 @@ void test_rs_io_stdio_winio() {
         TRY(io = Winio(file, IoBase::mode::write_only));
         TEST(io.is_open());
         TEST(io.ok());
-        TRY(io.write_str("Hello world\n"));
+        TRY(io.writes("Hello world\n"));
         TEST(io.ok());
-        TRY(io.write_str("Goodbye\n"));
+        TRY(io.writes("Goodbye\n"));
         TEST(io.ok());
         TRY(io.close());
         TEST(! io.is_open());
@@ -274,24 +250,24 @@ void test_rs_io_stdio_winio() {
 
         text.clear();
         TRY(io = Winio(file));
-        TRY(n = io.read_n(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
-        TRY(n = io.read_n(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
-        TRY(n = io.read_n(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(n = io.read_some(text, 12));  TEST(io.ok());  TEST_EQUAL(n, 12u);  TEST_EQUAL(text, "Hello world\n");
+        TRY(n = io.read_some(text, 8));   TEST(io.ok());  TEST_EQUAL(n, 8u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(n = io.read_some(text, 1));   TEST(io.ok());  TEST_EQUAL(n, 0u);   TEST_EQUAL(text, "Hello world\nGoodbye\n");
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.read_str(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
-        TRY(text = io.read_str(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
-        TRY(text = io.read_str(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+        TRY(text = io.reads(12));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\n");
+        TRY(text = io.reads(8));   TEST(io.ok());  TEST_EQUAL(text, "Goodbye\n");
+        TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.read_str(20));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
-        TRY(text = io.read_str(1));   TEST(io.ok());  TEST_EQUAL(text, "");
+        TRY(text = io.reads(20));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(text = io.reads(1));   TEST(io.ok());  TEST_EQUAL(text, "");
         TRY(io.close());
 
         TRY(io = Winio(file));
-        TRY(text = io.read_str(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
+        TRY(text = io.reads(100));  TEST(io.ok());  TEST_EQUAL(text, "Hello world\nGoodbye\n");
         TRY(io.close());
 
         TRY(io = Winio(file));
@@ -317,20 +293,12 @@ void test_rs_io_stdio_winio() {
         TRY(offset = io.tell());     TEST_EQUAL(offset, 0);
         TRY(io.seek(12));
         TRY(offset = io.tell());     TEST_EQUAL(offset, 12);
-        TRY(text = io.read_str(7));  TEST_EQUAL(text, "Goodbye");
+        TRY(text = io.reads(7));  TEST_EQUAL(text, "Goodbye");
         TRY(offset = io.tell());     TEST_EQUAL(offset, 19);
         TRY(io.seek(-13));
         TRY(offset = io.tell());     TEST_EQUAL(offset, 6);
-        TRY(text = io.read_str(5));  TEST_EQUAL(text, "world");
+        TRY(text = io.reads(5));  TEST_EQUAL(text, "world");
         TRY(offset = io.tell());     TEST_EQUAL(offset, 11);
-        TRY(io.close());
-
-        TRY(io = Winio(file));
-        TRY(path = io.get_path());
-        TEST(path.is_absolute());
-        TEST(path.id() == file.id());
-        TRY(strip_unc(path));
-        TEST_EQUAL(path, file.resolve());
         TRY(io.close());
 
         TRY(io = Winio(no_file, IoBase::mode::read_only));
@@ -339,11 +307,13 @@ void test_rs_io_stdio_winio() {
         TRY(io = Winio(file, IoBase::mode::write_only));
         TRY(io.format("Agent {0}\n", 86));
         TRY(io.print("Agent", 99));
+        TRY(io.write_chars(10, '*'));
         TRY(io.close());
 
         TRY(io = Winio(file));
         TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 86\n");
         TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "Agent 99\n");
+        TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "**********");
         TRY(text = io.read_line());  TEST(io.ok());  TEST_EQUAL(text, "");
         TRY(io.close());
 
@@ -358,18 +328,18 @@ void test_rs_io_stdio_null_device() {
     {
         Cstdio io;
         TRY(io = Cstdio::null());
-        TRY(text = io.read_str(20));
-        TRY(text = io.read_str(20));
+        TRY(text = io.reads(20));
+        TRY(text = io.reads(20));
         TEST_EQUAL(text, "");
     }
 
     {
         Cstdio io;
         TRY(io = Cstdio::null());
-        TRY(io.write_str("Hello world\n"));
-        TRY(io.write_str("Hello world\n"));
-        TRY(text = io.read_str(20));
-        TRY(text = io.read_str(20));
+        TRY(io.writes("Hello world\n"));
+        TRY(io.writes("Hello world\n"));
+        TRY(text = io.reads(20));
+        TRY(text = io.reads(20));
         #ifdef _XOPEN_SOURCE
             TEST_EQUAL(text, "");
         #endif
@@ -378,18 +348,18 @@ void test_rs_io_stdio_null_device() {
     {
         Fdio io;
         TRY(io = Fdio::null());
-        TRY(text = io.read_str(20));
-        TRY(text = io.read_str(20));
+        TRY(text = io.reads(20));
+        TRY(text = io.reads(20));
         TEST_EQUAL(text, "");
     }
 
     {
         Fdio io;
         TRY(io = Fdio::null());
-        TRY(io.write_str("Hello world\n"));
-        TRY(io.write_str("Hello world\n"));
-        TRY(text = io.read_str(20));
-        TRY(text = io.read_str(20));
+        TRY(io.writes("Hello world\n"));
+        TRY(io.writes("Hello world\n"));
+        TRY(text = io.reads(20));
+        TRY(text = io.reads(20));
         TEST_EQUAL(text, "");
     }
 
@@ -398,18 +368,18 @@ void test_rs_io_stdio_null_device() {
         {
             Winio io;
             TRY(io = Winio::null());
-            TRY(text = io.read_str(20));
-            TRY(text = io.read_str(20));
+            TRY(text = io.reads(20));
+            TRY(text = io.reads(20));
             TEST_EQUAL(text, "");
         }
 
         {
             Winio io;
             TRY(io = Winio::null());
-            TRY(io.write_str("Hello world\n"));
-            TRY(io.write_str("Hello world\n"));
-            TRY(text = io.read_str(20));
-            TRY(text = io.read_str(20));
+            TRY(io.writes("Hello world\n"));
+            TRY(io.writes("Hello world\n"));
+            TRY(text = io.reads(20));
+            TRY(text = io.reads(20));
             TEST_EQUAL(text, "");
         }
 
@@ -425,10 +395,8 @@ void test_rs_io_stdio_anonymous_temporary_file() {
     TRY(tf = std::make_unique<TempFile>());
     REQUIRE(tf);
     TEST(tf->get());
-    TRY(path = tf->get_path());
-    TEST(! path.empty());
-    TRY(tf.reset());
-    TEST(! path.exists());
+    TRY(path = tf->where());
+    TEST(path.empty());
 
 }
 
@@ -440,7 +408,7 @@ void test_rs_io_stdio_named_temporary_file() {
     TRY(tf = std::make_unique<TempFile>("", "__test_tempfile_"));
     REQUIRE(tf);
     TEST(tf->get());
-    TRY(path = tf->get_path());
+    TRY(path = tf->where());
     TEST(! path.empty());
     TEST_MATCH(path.name(), ".+" SLASH "__test_tempfile_[[:xdigit:]]{16}$");
     TEST(path.exists());

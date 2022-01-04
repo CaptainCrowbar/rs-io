@@ -8,7 +8,6 @@
 #include <string>
 #include <system_error>
 #include <utility>
-#include <vector>
 
 namespace RS::IO {
 
@@ -46,32 +45,31 @@ namespace RS::IO {
         IoBase& operator=(IoBase&&) = default;
 
         virtual void close() noexcept = 0;
-        virtual void flush() noexcept {}
+        virtual void flush() noexcept = 0;
         virtual int getc() noexcept;
-        virtual Path get_path() const { return {}; }
         virtual bool is_open() const noexcept = 0;
-        virtual bool is_terminal() const noexcept = 0;
         virtual void putc(char c) { write(&c, 1); }
         virtual size_t read(void* ptr, size_t maxlen) noexcept = 0;
         virtual std::string read_line();
         virtual void seek(ptrdiff_t offset, int which = SEEK_CUR) noexcept = 0;
         virtual ptrdiff_t tell() noexcept = 0;
         virtual size_t write(const void* ptr, size_t len) = 0;
-        virtual void write_n(size_t n, char c);
 
         void check(const std::string& detail = "") const;
         void clear_error() noexcept { set_error(0); }
         std::error_code error() const noexcept { return status_; }
-        template <typename... Args> void format(const std::string& pattern, Args&&... args);
+        template <typename... Args> void format(const std::string& pattern, Args&&... args)
+            { writes(Format::format(pattern, std::forward<Args>(args)...)); }
         Irange<line_iterator> lines() { return {line_iterator(*this), {}}; }
         bool ok() const noexcept { return ! status_ && is_open(); }
-        template <typename... Args> void print(Args&&... args);
+        template <typename... Args> void print(Args&&... args)
+            { write_line(Format::prints(std::forward<Args>(args)...)); }
         std::string read_all();
-        size_t read_n(std::string& s, size_t maxlen = 1024);
-        std::string read_str(size_t maxlen);
-        void write_line() { putc('\n'); }
-        void write_line(std::string_view str);
-        size_t write_str(std::string_view str);
+        size_t read_some(std::string& buf, size_t maxlen);
+        std::string reads(size_t maxlen);
+        void write_chars(size_t n, char c);
+        void write_line(const std::string& str = {});
+        size_t writes(const std::string& str);
 
     protected:
 
@@ -92,16 +90,6 @@ namespace RS::IO {
 
     };
 
-        template <typename... Args>
-        void IoBase::format(const std::string& pattern, Args&&... args) {
-            write_str(Format::format(pattern, std::forward<Args>(args)...));
-        }
-
-        template <typename... Args>
-        void IoBase::print(Args&&... args) {
-            write_line(Format::prints(std::forward<Args>(args)...));
-        }
-
     // C standard I/O
 
     class Cstdio:
@@ -115,6 +103,7 @@ namespace RS::IO {
         explicit Cstdio(FILE* f) noexcept: fp_(f) {}
         explicit Cstdio(const Path& f, mode m = mode::read_only);
         Cstdio(const Path& f, const std::string& iomode);
+
         Cstdio(const Cstdio&) = delete;
         Cstdio(Cstdio&&) = default;
         Cstdio& operator=(const Cstdio&) = delete;
@@ -123,9 +112,7 @@ namespace RS::IO {
         void close() noexcept override;
         void flush() noexcept override;
         int getc() noexcept override;
-        Path get_path() const override;
         bool is_open() const noexcept override { return bool(fp_); }
-        bool is_terminal() const noexcept override;
         void putc(char c) override;
         size_t read(void* ptr, size_t maxlen) noexcept override;
         std::string read_line() override;
@@ -166,6 +153,7 @@ namespace RS::IO {
         explicit Fdio(int f) noexcept: fd_(f) {}
         explicit Fdio(const Path& f, mode m = mode::read_only);
         Fdio(const Path& f, int iomode, int perm = 0666);
+
         Fdio(const Fdio&) = delete;
         Fdio(Fdio&&) = default;
         Fdio& operator=(const Fdio&) = delete;
@@ -173,9 +161,7 @@ namespace RS::IO {
 
         void close() noexcept override;
         void flush() noexcept override;
-        Path get_path() const override;
         bool is_open() const noexcept override { return bool(fd_); }
-        bool is_terminal() const noexcept override;
         size_t read(void* ptr, size_t maxlen) noexcept override;
         void seek(ptrdiff_t offset, int which = SEEK_CUR) noexcept override;
         ptrdiff_t tell() noexcept override;
@@ -226,6 +212,7 @@ namespace RS::IO {
             explicit Winio(const Path& f, mode m = mode::read_only);
             Winio(const Path& f, uint32_t desired_access, uint32_t share_mode, LPSECURITY_ATTRIBUTES security_attributes,
                 uint32_t creation_disposition, uint32_t flags_and_attributes = 0, HANDLE template_file = nullptr);
+
             Winio(const Winio&) = delete;
             Winio(Winio&&) = default;
             Winio& operator=(const Winio&) = delete;
@@ -233,9 +220,7 @@ namespace RS::IO {
 
             void close() noexcept override;
             void flush() noexcept override;
-            Path get_path() const override;
             bool is_open() const noexcept override { return bool(fh_); }
-            bool is_terminal() const noexcept override;
             size_t read(void* ptr, size_t maxlen) noexcept override;
             void seek(ptrdiff_t offset, int which = SEEK_CUR) noexcept override;
             ptrdiff_t tell() noexcept override;
@@ -271,12 +256,13 @@ namespace RS::IO {
         TempFile();
         TempFile(const Path& dir, const std::string& prefix);
         ~TempFile() noexcept override;
+
         TempFile(const TempFile&) = delete;
         TempFile(TempFile&&) = default;
         TempFile& operator=(const TempFile&) = delete;
         TempFile& operator=(TempFile&&) = default;
 
-        Path get_path() const override;
+        Path where() const { return where_; }
 
     private:
 
