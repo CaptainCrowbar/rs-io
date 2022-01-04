@@ -33,6 +33,15 @@ int main(int argc, char** argv) {
     UNIT_TEST(rs_io_path_current_directory)
     UNIT_TEST(rs_io_path_deep_search)
 
+    // stdio-test.cpp
+    UNIT_TEST(rs_io_stdio_cstdio)
+    UNIT_TEST(rs_io_stdio_fdio)
+    UNIT_TEST(rs_io_stdio_pipe)
+    UNIT_TEST(rs_io_stdio_winio)
+    UNIT_TEST(rs_io_stdio_null_device)
+    UNIT_TEST(rs_io_stdio_anonymous_temporary_file)
+    UNIT_TEST(rs_io_stdio_named_temporary_file)
+
     // channel-classes-test.cpp
     UNIT_TEST(rs_io_channel_generator)
     UNIT_TEST(rs_io_channel_buffer)
