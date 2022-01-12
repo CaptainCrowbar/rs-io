@@ -1,12 +1,14 @@
 #include "rs-io/path.hpp"
-#include "rs-unit-test.hpp"
 #include "rs-format/unicode.hpp"
+#include "rs-tl/guard.hpp"
+#include "rs-unit-test.hpp"
 #include <algorithm>
 #include <iterator>
 #include <string>
 #include <vector>
 
 using namespace RS::IO;
+using namespace RS::TL;
 using namespace RS::UnitTest;
 
 namespace {
@@ -72,7 +74,7 @@ void test_rs_io_path_deep_search() {
     Path::search_range range;
     std::vector<Path> files;
     std::string s;
-    ScopeGuard guard([=] { root.remove(Path::recurse); });
+    auto guard = on_scope_exit([=] { root.remove(Path::recurse); });
 
     TEST(! root.exists());
     TRY(range = root.deep_search());

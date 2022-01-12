@@ -1,6 +1,7 @@
 #include "rs-io/stdio.hpp"
 #include "rs-io/path.hpp"
 #include "rs-io/utility.hpp"
+#include "rs-tl/guard.hpp"
 #include "rs-unit-test.hpp"
 #include <algorithm>
 #include <iterator>
@@ -10,6 +11,7 @@
 #include <vector>
 
 using namespace RS::IO;
+using namespace RS::TL;
 
 #ifdef _XOPEN_SOURCE
     #define SLASH "/"
@@ -25,7 +27,7 @@ void test_rs_io_stdio_cstdio() {
     std::vector<std::string> vec;
     ptrdiff_t offset = 0;
     size_t n = 0;
-    ScopeGuard guard([=] { file.remove(); });
+    auto guard = on_scope_exit([=] { file.remove(); });
 
     TRY(file.remove());
     TEST(! file.exists());
@@ -124,7 +126,7 @@ void test_rs_io_stdio_fdio() {
     std::vector<std::string> vec;
     ptrdiff_t offset = 0;
     size_t n = 0;
-    ScopeGuard guard([=] { file.remove(); });
+    auto guard = on_scope_exit([=] { file.remove(); });
 
     TRY(file.remove());
     TEST(! file.exists());
@@ -233,7 +235,7 @@ void test_rs_io_stdio_winio() {
         std::vector<std::string> vec;
         ptrdiff_t offset = 0;
         size_t n = 0;
-        ScopeGuard guard([=] { file.remove(); });
+        auto guard = on_scope_exit([=] { file.remove(); });
 
         TRY(file.remove());
         TEST(! file.exists());

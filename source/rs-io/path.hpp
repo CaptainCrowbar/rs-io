@@ -2,6 +2,8 @@
 
 #include "rs-io/utility.hpp"
 #include "rs-format/unicode.hpp"
+#include "rs-tl/iterator.hpp"
+#include "rs-tl/types.hpp"
 #include <chrono>
 #include <functional>
 #include <iterator>
@@ -14,7 +16,7 @@
 namespace RS::IO {
 
     class Path:
-    public TotalOrder<Path> {
+    public TL::TotalOrder<Path> {
 
     public:
 
@@ -29,8 +31,8 @@ namespace RS::IO {
         class directory_iterator;
         class search_iterator;
 
-        using search_range = Irange<search_iterator>;
-        using directory_range = Irange<directory_iterator>;
+        using search_range = TL::Irange<search_iterator>;
+        using directory_range = TL::Irange<directory_iterator>;
         using id_type = std::pair<uint64_t, uint64_t>;
         using string_type = std::basic_string<character_type>;
         using time_point = std::chrono::system_clock::time_point;
@@ -241,7 +243,7 @@ namespace RS::IO {
         }
 
         class Path::search_iterator:
-        public InputIterator<search_iterator, const Path> {
+        public TL::InputIterator<search_iterator, const Path> {
         public:
             search_iterator() = default;
             search_iterator(const Path& dir, int flags);
@@ -254,7 +256,7 @@ namespace RS::IO {
         };
 
         class Path::directory_iterator:
-        public InputIterator<directory_iterator, const Path> {
+        public TL::InputIterator<directory_iterator, const Path> {
         public:
             directory_iterator() = default;
             directory_iterator(const Path& dir, int flags);

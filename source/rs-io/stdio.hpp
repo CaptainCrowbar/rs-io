@@ -5,6 +5,7 @@
 #include "rs-format/enum.hpp"
 #include "rs-format/format.hpp"
 #include "rs-format/string.hpp"
+#include "rs-tl/iterator.hpp"
 #include <cstdio>
 #include <string>
 #include <system_error>
@@ -35,7 +36,7 @@ namespace RS::IO {
     };
 
     class LineIterator:
-    public InputIterator<LineIterator, const std::string> {
+    public TL::InputIterator<LineIterator, const std::string> {
     public:
         LineIterator() = default;
         explicit LineIterator(IoBase& io): io_(&io), line_() { ++*this; }
@@ -67,7 +68,7 @@ namespace RS::IO {
         virtual ptrdiff_t tell() = 0;
         virtual size_t write(const void* ptr, size_t len) = 0;
 
-        Irange<LineIterator> lines() { return {LineIterator(*this), {}}; }
+        TL::Irange<LineIterator> lines() { return {LineIterator(*this), {}}; }
         std::string read_all();
         size_t read_some(std::string& buf, size_t maxlen = default_length);
         std::string reads(size_t maxlen = default_length);

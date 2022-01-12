@@ -1,4 +1,5 @@
 #include "rs-io/net.hpp"
+#include "rs-tl/guard.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <chrono>
@@ -433,7 +434,7 @@ namespace RS::IO {
             std::memset(&hints, 0, sizeof(hints));
             hints.ai_family = family;
             addrinfo* info = nullptr;
-            ScopeGuard guard([&] { if (info) freeaddrinfo(info); });
+            auto guard = TL::on_scope_exit([&] { if (info) freeaddrinfo(info); });
             clear_error();
             int rc = getaddrinfo(name.data(), nullptr, &hints, &info);
             int err = get_error();
@@ -452,7 +453,7 @@ namespace RS::IO {
             std::memset(&hints, 0, sizeof(hints));
             hints.ai_family = family;
             addrinfo* info = nullptr;
-            ScopeGuard guard([&] { if (info) freeaddrinfo(info); });
+            auto guard = TL::on_scope_exit([&] { if (info) freeaddrinfo(info); });
             clear_error();
             int rc = getaddrinfo(name.data(), nullptr, &hints, &info);
             int err = get_error();

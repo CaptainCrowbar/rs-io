@@ -1,6 +1,7 @@
 #include "rs-io/path.hpp"
 #include "rs-io/time.hpp"
 #include "rs-format/string.hpp"
+#include "rs-tl/guard.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
@@ -321,7 +322,7 @@ namespace RS::IO {
             for (size_t i = 2; i < len; i += 3)
                 prefix.filename_[i] = native_delimiter;
         }
-        Path suffix = join(irange(cuts.second, this_vec.end()));
+        Path suffix = join(TL::irange(cuts.second, this_vec.end()));
         Path rel_path = prefix / suffix;
         if (rel_path.empty())
             rel_path = ".";
@@ -672,12 +673,12 @@ namespace RS::IO {
             int err = errno;
             if (! in)
                 throw std::system_error(err, std::generic_category(), name());
-            ScopeGuard guard_in([=] { fclose(in); });
+            auto guard_in = TL::on_scope_exit([=] { fclose(in); });
             auto out = OS_FUNCTION(fopen)(dst.c_name(), OS_CHAR("wb"));
             err = errno;
             if (! out)
                 throw std::system_error(err, std::generic_category(), dst.name());
-            ScopeGuard guard_out([=] { fclose(out); });
+            auto guard_out = TL::on_scope_exit([=] { fclose(out); });
             std::string buf(block_size, '\0');
             while (! feof(in)) {
                 errno = 0;
@@ -830,7 +831,7 @@ namespace RS::IO {
     void Path::load(std::string& str, size_t maxlen, int flags) const {
         static constexpr size_t block_size = 16384;
         FILE* in = nullptr;
-        ScopeGuard guard([&] { if (in != nullptr && in != stdin) fclose(in); });
+        auto guard = TL::on_scope_exit([&] { if (in != nullptr && in != stdin) fclose(in); });
         if ((flags & std_default) != 0 && (filename_.empty() || filename_ == OS_CHAR("-"))) {
             in = stdin;
         } else {
@@ -858,7 +859,7 @@ namespace RS::IO {
         if ((flags & options) == options)
             throw std::invalid_argument("Invalid options to Path::save()");
         FILE* out = nullptr;
-        ScopeGuard guard([&] { if (out != nullptr && out != stdout) fclose(out); });
+        auto guard = TL::on_scope_exit([&] { if (out != nullptr && out != stdout) fclose(out); });
         if ((flags & std_default) != 0 && (filename_.empty() || filename_ == OS_CHAR("-"))) {
             out = stdout;
         } else {
@@ -1000,7 +1001,8 @@ namespace RS::IO {
         // Trim trailing / and /.
         size_t root_size = get_root(true).size();
         size_t min_root = std::max(root_size, size_t(1));
-        while (filename_.size() > min_root && (filename_.back() == native_delimiter || (filename_.back() == OS_CHAR('.') && filename_.end()[-2] == native_delimiter)))
+        while (filename_.size() > min_root && (filename_.back() == native_delimiter || (filename_.back() == OS_CHAR('.')
+                && filename_.end()[-2] == native_delimiter)))
             filename_.pop_back();
         #ifndef _XOPEN_SOURCE
             // Ensure a trailing slash on network paths
@@ -1053,7 +1055,7 @@ namespace RS::IO {
             auto fh = CreateFileW(c_name(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
             if (! fh)
                 return {};
-            ScopeGuard guard([=] { CloseHandle(fh); });
+            auto guard = TL::on_scope_exit([=] { CloseHandle(fh); });
             FILETIME ft[3];
             if (! GetFileTime(fh, ft, ft + 1, ft + 2))
                 return {};
@@ -1064,11 +1066,12 @@ namespace RS::IO {
 
         void Path::set_file_time(time_point t, int index) const {
             SetLastError(0);
-            auto fh = CreateFileW(c_name(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+            auto fh = CreateFileW(c_name(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
             auto err = GetLastError();
             if (! fh)
                 throw std::system_error(err, std::system_category(), name());
-            ScopeGuard guard([=] { CloseHandle(fh); });
+            auto guard = TL::on_scope_exit([=] { CloseHandle(fh); });
             FILETIME ft;
             timepoint_to_filetime(t, ft);
             FILETIME* fts[3];
