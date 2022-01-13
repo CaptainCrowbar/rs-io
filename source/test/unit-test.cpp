@@ -91,6 +91,16 @@ int main(int argc, char** argv) {
     UNIT_TEST(rs_io_thread_pool_class)
     UNIT_TEST(rs_io_thread_pool_timing)
 
+    // uri-test.cpp
+    UNIT_TEST(rs_io_uri_parse_http)
+    UNIT_TEST(rs_io_uri_parse_file)
+    UNIT_TEST(rs_io_uri_parse_mailto)
+    UNIT_TEST(rs_io_uri_assembly)
+    UNIT_TEST(rs_io_uri_modifiers)
+    UNIT_TEST(rs_io_uri_navigation)
+    UNIT_TEST(rs_io_uri_encoding)
+    UNIT_TEST(rs_io_uri_query)
+
     // unit-test.cpp
 
     return RS::UnitTest::end_tests();

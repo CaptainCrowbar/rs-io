@@ -22,6 +22,7 @@ be included using `"rs-io.hpp"`.
 Other libraries required (all header only):
 
 [My formatting library](https://github.com/CaptainCrowbar/rs-format)
+[My regex library](https://github.com/CaptainCrowbar/rs-regex)
 [My template library](https://github.com/CaptainCrowbar/rs-tl)
 [My unit test library](https://github.com/CaptainCrowbar/rs-unit-test)
 
@@ -42,3 +43,4 @@ Other libraries required (all header only):
     * [Process control](process.html)
 * Networking
     * [TCP/IP networking](net.html)
+    * [URI](uri.html)

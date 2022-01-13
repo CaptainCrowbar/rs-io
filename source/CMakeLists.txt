@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 # and propagate the new version to version.hpp.
 
 project(rs-io
-    VERSION 0.2.17
+    VERSION 0.2.18
     LANGUAGES CXX
 )
 
@@ -45,6 +45,9 @@ function(check_for_library required library header repo)
     endif()
 endfunction()
 
+check_for_library(yes rs-format rs-format.hpp https://github.com/CaptainCrowbar/rs-format)
+check_for_library(yes rs-regex rs-regex.hpp https://github.com/CaptainCrowbar/rs-regex)
+check_for_library(yes rs-tl rs-tl.hpp https://github.com/CaptainCrowbar/rs-tl)
 check_for_library(no rs-unit-test rs-unit-test.hpp https://github.com/CaptainCrowbar/rs-unit-test)
 
 set(library rs-io)
@@ -62,6 +65,7 @@ add_library(${library} STATIC
     ${library}/signal.cpp
     ${library}/named-mutex.cpp
     ${library}/thread-pool.cpp
+    ${library}/uri.cpp
 )
 
 add_executable(${unittest}
@@ -79,11 +83,14 @@ add_executable(${unittest}
     test/signal-test.cpp
     test/named-mutex-test.cpp
     test/thread-pool-test.cpp
+    test/uri-test.cpp
     test/unit-test.cpp
 )
 
 target_link_libraries(${unittest}
     PRIVATE ${library}
+    PRIVATE rs-regex
+    PRIVATE pcre2-8
     PRIVATE Threads::Threads
 )
 

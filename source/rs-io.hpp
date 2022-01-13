@@ -9,4 +9,5 @@
 #include "rs-io/stdio.hpp"
 #include "rs-io/thread-pool.hpp"
 #include "rs-io/time.hpp"
+#include "rs-io/uri.hpp"
 #include "rs-io/version.hpp"
