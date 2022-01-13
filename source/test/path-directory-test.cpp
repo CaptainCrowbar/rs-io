@@ -18,7 +18,7 @@ namespace {
         using std::begin;
         using std::end;
         auto it = std::find(begin(range), end(range), t);
-        return it == end(range) ? npos : it - begin(range);
+        return it == end(range) ? std::string::npos : it - begin(range);
     }
 
 }

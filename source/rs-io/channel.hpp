@@ -2,6 +2,7 @@
 
 #include "rs-io/time.hpp"
 #include "rs-io/utility.hpp"
+#include "rs-tl/thread.hpp"
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -13,7 +14,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <type_traits>
 #include <utility>
 
@@ -373,9 +373,8 @@ namespace RS::IO {
         friend class Channel;
 
         struct task_info {
-            std::thread thread;
+            TL::Thread thread;
             std::function<void()> handler;
-            ~task_info() noexcept { try { if (thread.joinable()) thread.join(); } catch (...) {} }
         };
 
         std::map<Channel*, std::unique_ptr<task_info>> tasks_;
