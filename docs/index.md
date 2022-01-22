@@ -19,12 +19,13 @@ and headers into `/usr/local/bin` and `/usr/local/include` or the equivalent.
 Headers can be included individually as required, or the entire library can
 be included using `"rs-io.hpp"`.
 
-Other libraries required (all header only):
+Dependencies:
 
 * [My formatting library](https://github.com/CaptainCrowbar/rs-format)
 * [My regex library](https://github.com/CaptainCrowbar/rs-regex)
 * [My template library](https://github.com/CaptainCrowbar/rs-tl)
 * [My unit test library](https://github.com/CaptainCrowbar/rs-unit-test)
+* [PCRE2](http://www.pcre.org/)
 
 ## Index
 
