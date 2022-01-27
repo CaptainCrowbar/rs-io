@@ -1,11 +1,11 @@
 #include "rs-io/path.hpp"
 #include "rs-io/time.hpp"
 #include "rs-format/string.hpp"
+#include "rs-regex/regex.hpp"
 #include "rs-tl/guard.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
-#include <regex>
 #include <stdexcept>
 #include <system_error>
 
@@ -35,6 +35,7 @@
 
 #endif
 
+using namespace RS::RE;
 using namespace std::chrono;
 using namespace std::literals;
 
@@ -110,6 +111,17 @@ namespace RS::IO {
                 return info;
             }
 
+            std::string make_utf8(const std::wstring& wstr) {
+                return Format::encode_utf8_string(Format::decode_string(wstr));
+            }
+
+            std::string dumb_ascii_conversion(const std::wstring& wstr) {
+                std::string ascii(wstr.size(), '\0');
+                std::transform(wstr.begin(), wstr.end(), ascii.begin(),
+                    [] (wchar_t w) { return w <= 127 ? char(w) : '_'; });
+                return ascii;
+            }
+
         #endif
 
         Path get_current_directory(bool checked) {
@@ -141,15 +153,11 @@ namespace RS::IO {
             #endif
         }
 
-        [[maybe_unused]] inline std::string make_utf8(const std::string& str) {
+        std::string make_utf8(const std::string& str) {
             return str;
         }
 
-        [[maybe_unused]] inline std::string make_utf8(const std::wstring& str) {
-            return Format::encode_utf8_string(Format::decode_string(str));
-        }
-
-        [[maybe_unused]] inline Path::string_type make_native_string(const std::string& utf8) {
+        Path::string_type make_native_string(const std::string& utf8) {
             #ifdef _XOPEN_SOURCE
                 return utf8;
             #else
@@ -246,8 +254,12 @@ namespace RS::IO {
         #ifdef _XOPEN_SOURCE
             return filename_[0] == '/';
         #else
-            static const std::wregex pattern(LR"(^(\\\\\?\\)?([A-Z]:\\|\\{2,}(?=[^?\\])))", std::regex_constants::nosubs | std::regex_constants::optimize);
-            return std::regex_search(filename_, pattern);
+            static const Regex pattern(R"(
+                ^ ( \\{2}\?\\ ) ?
+                ( [A-Z] :\\ | \\{2,} (?= [^?\\] ))
+            )", Regex::extended | Regex::icase | Regex::no_capture | Regex::optimize);
+            auto ascii_name = dumb_ascii_conversion(filename_);
+            return pattern(ascii_name).matched();
         #endif
     }
 
@@ -395,7 +407,7 @@ namespace RS::IO {
 
     // File system query functions
 
-    Path::time_point Path::access_time(int flags) const noexcept {
+    Path::time_point Path::access_time([[maybe_unused]] int flags) const noexcept {
         time_point tp;
         #ifdef __APPLE__
             auto st = get_stat(filename_, flags).st;
@@ -404,28 +416,25 @@ namespace RS::IO {
             auto st = get_stat(filename_, flags).st;
             timespec_to_timepoint(st.st_atim, tp);
         #else
-            (void)flags;
             tp = get_file_time(1);
         #endif
         return tp;
     }
 
-    Path::time_point Path::create_time(int flags) const noexcept {
+    Path::time_point Path::create_time([[maybe_unused]] int flags) const noexcept {
         time_point tp;
         #ifdef __APPLE__
             auto st = get_stat(filename_, flags).st;
             timespec_to_timepoint(st.st_birthtimespec, tp);
         #elif defined(_XOPEN_SOURCE)
-            (void)flags;
             return {};
         #else
-            (void)flags;
             tp = get_file_time(0);
         #endif
         return tp;
     }
 
-    Path::time_point Path::modify_time(int flags) const noexcept {
+    Path::time_point Path::modify_time([[maybe_unused]] int flags) const noexcept {
         time_point tp;
         #ifdef __APPLE__
             auto st = get_stat(filename_, flags).st;
@@ -434,13 +443,12 @@ namespace RS::IO {
             auto st = get_stat(filename_, flags).st;
             timespec_to_timepoint(st.st_mtim, tp);
         #else
-            (void)flags;
             tp = get_file_time(2);
         #endif
         return tp;
     }
 
-    Path::time_point Path::status_time(int flags) const noexcept {
+    Path::time_point Path::status_time([[maybe_unused]] int flags) const noexcept {
         time_point tp;
         #ifdef __APPLE__
             auto st = get_stat(filename_, flags).st;
@@ -448,8 +456,6 @@ namespace RS::IO {
         #elif defined(_XOPEN_SOURCE)
             auto st = get_stat(filename_, flags).st;
             timespec_to_timepoint(st.st_ctim, tp);
-        #else
-            (void)flags;
         #endif
         return tp;
     }
@@ -464,7 +470,7 @@ namespace RS::IO {
         return {it, {}};
     }
 
-    bool Path::exists(int flags) const noexcept {
+    bool Path::exists([[maybe_unused]] int flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             struct stat st;
             if ((flags & no_follow) != 0)
@@ -472,19 +478,17 @@ namespace RS::IO {
             else
                 return stat(c_name(), &st) == 0;
         #else
-            (void)flags;
             return get_attributes(filename_);
         #endif
     }
 
-    Path::id_type Path::id(int flags) const noexcept {
+    Path::id_type Path::id([[maybe_unused]] int flags) const noexcept {
         uint64_t device = 0, file = 0;
         #ifdef _XOPEN_SOURCE
             auto st = get_stat(filename_, flags).st;
             device = uint64_t(st.st_dev);
             file = uint64_t(st.st_ino);
         #else
-            (void)flags;
             auto handle = CreateFileW(c_name(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS , nullptr);
             if (handle != INVALID_HANDLE_VALUE) {
                 BY_HANDLE_FILE_INFORMATION info;
@@ -499,33 +503,30 @@ namespace RS::IO {
         return {device, file};
     }
 
-    bool Path::is_directory(int flags) const noexcept {
+    bool Path::is_directory([[maybe_unused]] int flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             auto st = get_stat(filename_, flags).st;
             return S_ISDIR(st.st_mode);
         #else
-            (void)flags;
             return get_attributes(filename_) & FILE_ATTRIBUTE_DIRECTORY;
         #endif
     }
 
-    bool Path::is_file(int flags) const noexcept {
+    bool Path::is_file([[maybe_unused]] int flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             auto st = get_stat(filename_, flags).st;
             return S_ISREG(st.st_mode);
         #else
-            (void)flags;
             auto attr = get_attributes(filename_);
             return attr && ! (attr & (FILE_ATTRIBUTE_DEVICE | FILE_ATTRIBUTE_DIRECTORY));
         #endif
     }
 
-    bool Path::is_special(int flags) const noexcept {
+    bool Path::is_special([[maybe_unused]] int flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             auto rc = get_stat(filename_, flags);
             return rc.ok && ! S_ISDIR(rc.st.st_mode) && ! S_ISREG(rc.st.st_mode);
         #else
-            (void)flags;
             return get_attributes(filename_) & FILE_ATTRIBUTE_DEVICE;
         #endif
     }
@@ -798,18 +799,16 @@ namespace RS::IO {
         #endif
     }
 
-    void Path::set_access_time(time_point t, int flags) const {
+    void Path::set_access_time(time_point t, [[maybe_unused]] int flags) const {
         #ifdef _XOPEN_SOURCE
             set_file_times(t, modify_time(), flags);
         #else
-            (void)flags;
             set_file_time(t, 1);
         #endif
     }
 
-    void Path::set_create_time(time_point t, int /*flags*/) const {
+    void Path::set_create_time([[maybe_unused]] time_point t, int /*flags*/) const {
         #ifdef _XOPEN_SOURCE
-            (void)t;
             throw std::system_error(std::make_error_code(std::errc::operation_not_supported),
                 "The operating system does not support modifying file creation time");
         #else
@@ -817,11 +816,10 @@ namespace RS::IO {
         #endif
     }
 
-    void Path::set_modify_time(time_point t, int flags) const {
+    void Path::set_modify_time(time_point t, [[maybe_unused]] int flags) const {
         #ifdef _XOPEN_SOURCE
             set_file_times(access_time(), t, flags);
         #else
-            (void)flags;
             set_file_time(t, 2);
         #endif
     }
@@ -933,24 +931,28 @@ namespace RS::IO {
         return filename_.substr(start);
     }
 
-    Path::string_type Path::get_root(bool allow_drive_special) const noexcept {
+    Path::string_type Path::get_root([[maybe_unused]] bool allow_drive_special) const noexcept {
         size_t pos = 0;
         if (! filename_.empty()) {
             #ifdef _XOPEN_SOURCE
                 // Posix: /path
-                (void)allow_drive_special;
                 pos = filename_.find_first_not_of('/');
             #else
                 // Windows: [\\?\]drive:\path or [\\?\]\\server\path
                 // if allow_drive_special: [\\?\]\path or [\\?\]drive:path
-                static const std::wregex pattern1(LR"(^(\\\\\?\\)?([A-Za-z]:\\|\\{2,}[^?\\]+\\?))",
-                    std::regex_constants::nosubs | std::regex_constants::optimize);
-                static const std::wregex pattern2(LR"(^(\\\\\?\\)?([A-Za-z]:\\?|\\{2,}[^?\\]+\\?|\\+))",
-                    std::regex_constants::nosubs | std::regex_constants::optimize);
+                static const Regex pattern1(R"(
+                    ^ ( \\{2}\?\\ ) ?
+                    ( [A-Z] :\\ | \\{2,} [^?\\]+ \\? )
+                )", Regex::extended | Regex::icase | Regex::no_capture | Regex::optimize);
+                static const Regex pattern2(R"(
+                    ^ ( \\{2}\?\\ ) ?
+                    ( [A-Z] :\\? | \\{2,} [^?\\]+ \\? | \\+ )
+                )", Regex::extended | Regex::icase | Regex::no_capture | Regex::optimize);
                 auto& pattern = allow_drive_special ? pattern2 : pattern1;
-                std::wsmatch match;
-                if (std::regex_search(filename_, match, pattern))
-                    pos = match.length();
+                auto ascii_name = dumb_ascii_conversion(filename_);
+                auto match = pattern(ascii_name);
+                if (match)
+                    pos = match.count();
             #endif
         }
         return filename_.substr(0, pos);
