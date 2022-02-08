@@ -112,7 +112,7 @@ namespace RS::IO {
             }
 
             std::string make_utf8(const std::wstring& wstr) {
-                return Format::encode_utf8_string(Format::decode_string(wstr));
+                return Format::to_utf8(Format::decode_string(wstr));
             }
 
             std::string dumb_ascii_conversion(const std::wstring& wstr) {
@@ -161,7 +161,7 @@ namespace RS::IO {
             #ifdef _XOPEN_SOURCE
                 return utf8;
             #else
-                return Format::encode_utf16_string(Format::decode_string(utf8));
+                return Format::to_utf16(Format::decode_string(utf8));
             #endif
         }
 
