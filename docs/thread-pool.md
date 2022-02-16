@@ -26,7 +26,6 @@ and can be called from any thread. Functions other than `clear()` and the
 wait functions can be called from inside an executing job.
 
 ```c++
-using ThreadPool::callback = std::function<void()>;
 using ThreadPool::clock = std::chrono::system_clock;
 ```
 
@@ -49,14 +48,11 @@ ThreadPool::~ThreadPool() noexcept;
 The destructor calls `clear()` and waits for it to finish.
 
 ```c++
-void ThreadPool::clear() noexcept;
+int ThreadPool::threads() const noexcept;
 ```
 
-Discards any queued jobs that have not yet been started, and waits for all
-currently executing jobs to finish before returning. New jobs can be queued
-after it returns. It is safe for one thread to call `insert()` while another
-is calling `clear()`, but the newly inserted job may or may not be discarded
-without being executed.
+Returns the thread count. This is always positive, and always constant for the
+lifetime of the `ThreadPool` object.
 
 ```c++
 template <typename F> void ThreadPool::insert(F&& f);
@@ -67,17 +63,41 @@ arguments. Behaviour is undefined if the callback is a null function pointer
 or `std::function`, or if a callback throws an exception.
 
 ```c++
+template <typename F> void ThreadPool::each(int n, F&& f);
+template <typename F> void ThreadPool::each(int start, int delta, int stop, F&& f);
+template <typename Range, typename F> void ThreadPool::each(Range& range, F&& f);
+```
+
+Insert a job for each element in the range.
+
+The first version counts from `i=0` to `n-1`; no jobs will be inserted if
+`n<=0`. The second version starts at `i=start`, incrementing by `i+=delta` at
+each step, until `i>=stop` if `delta>0`, or `i<=stop` if `delta<0`.
+
+The callback argument can be either a function that takes no arguments, or one
+that takes one argument of a type compatible with the range's value type
+(`int` for the first two versions). In the third version the callback may
+modify a mutable reference argument.
+
+For all versions, behaviour is undefined if the callback is a null function
+pointer or `std::function`, or if a callback throws an exception. For the
+second version, behaviour is undefined if `delta==0`.
+
+```c++
+void ThreadPool::clear() noexcept;
+```
+
+Discards any queued jobs that have not yet been started, and waits for all
+currently executing jobs to finish before returning. New jobs can be queued
+after it returns. It is safe for one thread to call `insert()` while another
+is calling `clear()`, but the newly inserted job may or may not be discarded
+without being executed.
+
+```c++
 bool ThreadPool::poll();
 ```
 
 True when there are no jobs queued or executing.
-
-```c++
-int ThreadPool::threads() const noexcept;
-```
-
-Returns the thread count. This is always positive, and always constant for the
-lifetime of the `ThreadPool` object.
 
 ```c++
 void ThreadPool::wait() noexcept;

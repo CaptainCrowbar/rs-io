@@ -89,6 +89,7 @@ int main(int argc, char** argv) {
 
     // thread-pool-test.cpp
     UNIT_TEST(rs_io_thread_pool_class)
+    UNIT_TEST(rs_io_thread_pool_each)
     UNIT_TEST(rs_io_thread_pool_timing)
 
     // uri-test.cpp

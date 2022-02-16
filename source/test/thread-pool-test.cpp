@@ -1,4 +1,5 @@
 #include "rs-io/thread-pool.hpp"
+#include "rs-format/string.hpp"
 #include "rs-unit-test.hpp"
 #include <algorithm>
 #include <chrono>
@@ -10,13 +11,28 @@
 #include <string>
 #include <thread>
 
+using namespace RS::Format;
 using namespace RS::IO;
 using namespace std::chrono;
+
+namespace {
+
+    const std::string& alphabet() {
+        static const std::string str = [] {
+            std::string str;
+            for (char c = 'a'; c <= 'z'; ++c)
+                str += c;
+            return str;
+        }();
+        return str;
+    }
+
+}
 
 void test_rs_io_thread_pool_class() {
 
     ThreadPool pool;
-    std::string expect, log;
+    std::string log;
     std::mutex mutex;
     std::mt19937 rng(42);
     std::uniform_int_distribution<int> dist(1, 100);
@@ -30,16 +46,15 @@ void test_rs_io_thread_pool_class() {
     };
 
     for (char c = 'a'; c <= 'z'; ++c) {
-        expect += c;
         auto t = dist(rng);
         TRY(pool.insert([=] { f(c, t); }));
     }
 
     TEST(pool.wait_for(5s));
-    TEST_EQUAL(log.size(), expect.size());
-    TEST(log != expect);
+    TEST_EQUAL(log.size(), alphabet().size());
+    TEST(log != alphabet());
     std::sort(log.begin(), log.end());
-    TEST_EQUAL(log, expect);
+    TEST_EQUAL(log, alphabet());
 
     TRY(pool.clear());
     TEST_EQUAL(pool.threads(), int(std::thread::hardware_concurrency()));
@@ -52,10 +67,88 @@ void test_rs_io_thread_pool_class() {
     }
 
     TEST(pool.wait_for(5s));
-    TEST_EQUAL(log.size(), expect.size());
-    TEST(log != expect);
+    TEST_EQUAL(log.size(), alphabet().size());
+    TEST(log != alphabet());
     std::sort(log.begin(), log.end());
-    TEST_EQUAL(log, expect);
+    TEST_EQUAL(log, alphabet());
+
+}
+
+void test_rs_io_thread_pool_each() {
+
+    ThreadPool pool;
+    std::string log;
+    std::mutex mutex;
+
+    TRY(pool.each(10, [&] {
+        std::unique_lock lock(mutex);
+        log += 'a';
+    }));
+
+    TEST(pool.wait_for(5s));
+    TEST_EQUAL(log, std::string(10, 'a'));
+
+    TRY(pool.clear());
+    log.clear();
+
+    TRY(pool.each(26, [&] (int i) {
+        std::unique_lock lock(mutex);
+        log += char('a' + i);
+    }));
+
+    TEST(pool.wait_for(5s));
+    TEST_EQUAL(log.size(), alphabet().size());
+    std::sort(log.begin(), log.end());
+    TEST_EQUAL(log, alphabet());
+
+    TRY(pool.clear());
+    log.clear();
+
+    TRY(pool.each('a', 1, 'z' + 1, [&] (int i) {
+        std::unique_lock lock(mutex);
+        log += char(i);
+    }));
+
+    TEST(pool.wait_for(5s));
+    TEST_EQUAL(log.size(), alphabet().size());
+    std::sort(log.begin(), log.end());
+    TEST_EQUAL(log, alphabet());
+
+    TRY(pool.clear());
+    log.clear();
+
+    TRY(pool.each(alphabet(), [&] {
+        std::unique_lock lock(mutex);
+        log += 'a';
+    }));
+
+    TEST(pool.wait_for(5s));
+    TEST_EQUAL(log.size(), alphabet().size());
+    TEST_EQUAL(log, std::string(alphabet().size(), 'a'));
+
+    TRY(pool.clear());
+    log.clear();
+
+    TRY(pool.each(alphabet(), [&] (char c) {
+        std::unique_lock lock(mutex);
+        log += c;
+    }));
+
+    TEST(pool.wait_for(5s));
+    TEST_EQUAL(log.size(), alphabet().size());
+    std::sort(log.begin(), log.end());
+    TEST_EQUAL(log, alphabet());
+
+    TRY(pool.clear());
+    log = alphabet();
+
+    TRY(pool.each(log, [&] (char& c) {
+        std::unique_lock lock(mutex);
+        c = ascii_toupper(c);
+    }));
+
+    TEST(pool.wait_for(5s));
+    TEST_EQUAL(log, ascii_uppercase(alphabet()));
 
 }
 
