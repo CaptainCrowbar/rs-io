@@ -20,7 +20,7 @@ void test_rs_io_thread_pool_class() {
     std::mt19937 rng(42);
     std::uniform_int_distribution<int> dist(1, 100);
 
-    TEST_EQUAL(pool.threads(), std::thread::hardware_concurrency());
+    TEST_EQUAL(pool.threads(), int(std::thread::hardware_concurrency()));
 
     auto f = [&] (char c, int t) {
         std::this_thread::sleep_for(milliseconds(t));
@@ -41,7 +41,7 @@ void test_rs_io_thread_pool_class() {
     TEST_EQUAL(log, expect);
 
     TRY(pool.clear());
-    TEST_EQUAL(pool.threads(), std::thread::hardware_concurrency());
+    TEST_EQUAL(pool.threads(), int(std::thread::hardware_concurrency()));
     log.clear();
 
     for (char c = 'a'; c <= 'z'; ++c) {

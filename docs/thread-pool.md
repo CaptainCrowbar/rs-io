@@ -19,13 +19,13 @@ class ThreadPool: public Wait;
     using ThreadPool::callback = std::function<void()>;
     using ThreadPool::clock = std::chrono::system_clock;
     ThreadPool::ThreadPool();
-    explicit ThreadPool::ThreadPool(size_t threads);
+    explicit ThreadPool::ThreadPool(int threads);
     ThreadPool::~ThreadPool() noexcept;
     void ThreadPool::clear() noexcept;
     void ThreadPool::insert(const callback& call);
     void ThreadPool::insert(callback&& call);
     bool ThreadPool::poll();
-    size_t ThreadPool::threads() const noexcept;
+    int ThreadPool::threads() const noexcept;
     void ThreadPool::wait() noexcept;
     template <typename R, typename P>
         bool ThreadPool::wait_for(std::chrono::duration<R, P> t) noexcept;
@@ -33,9 +33,9 @@ class ThreadPool: public Wait;
 ```
 
 This class runs an internal thread pool, with the number of system threads
-specified to the constructor. If no thread count is specified, or the count
-is zero, `std::thread::hardware_concurrency()` will be used instead. The
-`size()` function returns the thread count (always positive, and always
+specified to the constructor. If no thread count is specified, or the count is
+zero or negative, `std::thread::hardware_concurrency()` will be used instead.
+The `size()` function returns the thread count (always positive, and always
 constant for the lifetime of the `ThreadPool` object).
 
 The `insert()` function queues a job for execution. Behaviour is undefined if

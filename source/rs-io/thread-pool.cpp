@@ -8,7 +8,7 @@ namespace RS::IO {
 
     // Class ThreadPool
 
-    ThreadPool::ThreadPool(size_t threads):
+    ThreadPool::ThreadPool(int threads):
     clear_count_(0), next_worker_(0), unfinished_jobs_(0), shutting_down_(false), workers_(adjust_threads(threads)) {
         for (auto& work: workers_)
             work.thread = std::thread([&] { thread_payload(work); });
@@ -25,7 +25,7 @@ namespace RS::IO {
         ++clear_count_;
         for (auto& work: workers_) {
             std::unique_lock lock(work.mutex);
-            unfinished_jobs_ -= work.queue.size();
+            unfinished_jobs_ -= int(work.queue.size());
             work.queue.clear();
         }
         wait();
@@ -35,9 +35,9 @@ namespace RS::IO {
     void ThreadPool::insert(const callback& call) {
         if (clear_count_ || ! call)
             return;
-        size_t i = next_worker_;
-        next_worker_ = (i + 1) % workers_.size();
-        auto& work = workers_[i];
+        int index = next_worker_;
+        next_worker_ = (index + 1) % threads();
+        auto& work = workers_[index];
         std::unique_lock lock(work.mutex);
         ++unfinished_jobs_;
         work.queue.push_back(call);
@@ -46,9 +46,9 @@ namespace RS::IO {
     void ThreadPool::insert(callback&& call) {
         if (clear_count_ || ! call)
             return;
-        size_t i = next_worker_;
-        next_worker_ = (i + 1) % workers_.size();
-        auto& work = workers_[i];
+        int index = next_worker_;
+        next_worker_ = (index + 1) % threads();
+        auto& work = workers_[index];
         std::unique_lock lock(work.mutex);
         ++unfinished_jobs_;
         work.queue.push_back(std::move(call));
@@ -75,7 +75,7 @@ namespace RS::IO {
             address ^= address >> 32;
         auto seed = uint32_t(address);
         std::minstd_rand rng(seed);
-        std::uniform_int_distribution<size_t> random_index(0, workers_.size() - 1);
+        std::uniform_int_distribution<int> random_index(0, threads() - 1);
         callback call;
         for (;;) {
             call = {};
@@ -105,9 +105,9 @@ namespace RS::IO {
         }
     }
 
-    size_t ThreadPool::adjust_threads(size_t threads) noexcept {
-        if (threads == 0)
-            threads = std::thread::hardware_concurrency();
+    int ThreadPool::adjust_threads(int threads) noexcept {
+        if (threads <= 0)
+            threads = int(std::thread::hardware_concurrency());
         if (threads == 0)
             threads = 1;
         return threads;
