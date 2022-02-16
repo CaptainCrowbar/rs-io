@@ -59,12 +59,12 @@ is calling `clear()`, but the newly inserted job may or may not be discarded
 without being executed.
 
 ```c++
-void ThreadPool::insert(const callback& call);
-void ThreadPool::insert(callback&& call);
+template <typename F> void ThreadPool::insert(F&& f);
 ```
 
-Queues a job for execution. Behaviour is undefined if a callback throws an
-exception.
+Queues a job for execution. `F` must be a function-like type callable with no
+arguments. Behaviour is undefined if the callback is a null function pointer
+or `std::function`, or if a callback throws an exception.
 
 ```c++
 bool ThreadPool::poll();

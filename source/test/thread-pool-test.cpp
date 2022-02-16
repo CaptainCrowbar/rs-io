@@ -2,6 +2,7 @@
 #include "rs-unit-test.hpp"
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <mutex>
 #include <ostream>
@@ -46,7 +47,8 @@ void test_rs_io_thread_pool_class() {
 
     for (char c = 'a'; c <= 'z'; ++c) {
         auto t = dist(rng);
-        TRY(pool.insert([=] { f(c, t); }));
+        std::function<void()> cb = [=] { f(c, t); };
+        TRY(pool.insert(cb));
     }
 
     TEST(pool.wait_for(5s));
