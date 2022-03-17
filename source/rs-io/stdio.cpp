@@ -445,13 +445,12 @@ namespace RS::IO {
 
     std::pair<Fdio, Fdio> Fdio::pipe(size_t winmem) {
         int fds[2];
-        int rc = 0;
         errno = 0;
         #ifdef _XOPEN_SOURCE
             (void)winmem;
-            rc = ::pipe(fds);
+            ::pipe(fds);
         #else
-            rc = _pipe(fds, iosize(winmem), O_BINARY);
+            _pipe(fds, iosize(winmem), O_BINARY);
         #endif
             check_for_error(errno);
         std::pair<Fdio, Fdio> pair;
