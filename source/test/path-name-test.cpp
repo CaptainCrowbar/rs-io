@@ -16,10 +16,10 @@ void test_rs_io_path_legal_names() {
     TEST(Path("foo/bar").is_legal());
     TEST(! Path("foo\0bar"s).is_legal());
 
-    TRY(Path("", Path::legal_name));
-    TRY(Path("foo", Path::legal_name));
-    TRY(Path("foo/bar", Path::legal_name));
-    TEST_THROW(Path("foo\0bar"s, Path::legal_name), std::invalid_argument);
+    TRY(Path("", Path::flag::legal_name));
+    TRY(Path("foo", Path::flag::legal_name));
+    TRY(Path("foo/bar", Path::flag::legal_name));
+    TEST_THROW(Path("foo\0bar"s, Path::flag::legal_name), std::invalid_argument);
 
     #ifdef _XOPEN_SOURCE
 

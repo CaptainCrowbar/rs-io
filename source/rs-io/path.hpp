@@ -2,6 +2,7 @@
 
 #include "rs-io/utility.hpp"
 #include "rs-format/unicode.hpp"
+#include "rs-tl/enum.hpp"
 #include "rs-tl/iterator.hpp"
 #include "rs-tl/types.hpp"
 #include <chrono>
@@ -37,7 +38,22 @@ namespace RS::IO {
         using string_type = std::basic_string<character_type>;
         using time_point = std::chrono::system_clock::time_point;
 
-        enum class form {
+        enum class flag: int {
+            none        = 0,
+            append      = 1 << 0,   // Append if file exists
+            bottom_up   = 1 << 1,   // Bottom up order
+            legal_name  = 1 << 2,   // Throw on illegal file name
+            may_copy    = 1 << 3,   // Copy if operation not allowed
+            may_fail    = 1 << 4,   // Empty string if read fails
+            no_follow   = 1 << 5,   // Don't follow symlinks
+            no_hidden   = 1 << 6,   // Skip hidden files
+            overwrite   = 1 << 7,   // Delete existing file if necessary
+            recurse     = 1 << 8,   // Recursive directory operations
+            stdio       = 1 << 9,   // Use stdin/out if file is "" or "-"
+            unicode     = 1 << 10,  // Skip files with non-Unicode names
+        };
+
+        enum class form: int {
             empty,
             absolute,
             drive_absolute,
@@ -61,21 +77,9 @@ namespace RS::IO {
             static constexpr bool native_case = true;
         #endif
 
-        static constexpr int append       = 1 << 0;   // Append if file exists
-        static constexpr int bottom_up    = 1 << 1;   // Bottom up order
-        static constexpr int legal_name   = 1 << 2;   // Throw on illegal file name
-        static constexpr int may_copy     = 1 << 3;   // Copy if operation not allowed
-        static constexpr int may_fail     = 1 << 4;   // Empty string if read fails
-        static constexpr int no_follow    = 1 << 5;   // Don't follow symlinks
-        static constexpr int no_hidden    = 1 << 6;   // Skip hidden files
-        static constexpr int overwrite    = 1 << 7;   // Delete existing file if necessary
-        static constexpr int recurse      = 1 << 8;   // Recursive directory operations
-        static constexpr int std_default  = 1 << 9;   // Use stdin/out if file is "" or "-"
-        static constexpr int unicode      = 1 << 10;  // Skip files with non-Unicode names
-
         // Comparison objects
 
-        enum class cmp {
+        enum class cmp: int {
             cased,
             icase,
             native = native_case ? cased : icase,
@@ -102,12 +106,12 @@ namespace RS::IO {
         // Life cycle functions
 
         Path() = default;
-        Path(const std::string& file, int flags = 0);
-        Path(const char* file, int flags = 0): Path(std::string(file), flags) {}
+        Path(const std::string& file, flag flags = flag::none);
+        Path(const char* file, flag flags = flag::none): Path(std::string(file), flags) {}
 
         #ifdef _WIN32
-            Path(const std::wstring& file, int flags = 0);
-            Path(const wchar_t* file, int flags = 0): Path(std::wstring(file), flags) {}
+            Path(const std::wstring& file, flag flags = flag::none);
+            Path(const wchar_t* file, flag flags = flag::none): Path(std::wstring(file), flags) {}
         #endif
 
         // Path name functions
@@ -154,46 +158,46 @@ namespace RS::IO {
 
         // File system query functions
 
-        time_point access_time(int flags = 0) const noexcept;
-        time_point create_time(int flags = 0) const noexcept;
-        time_point modify_time(int flags = 0) const noexcept;
-        time_point status_time(int flags = 0) const noexcept;
+        time_point access_time(flag flags = flag::none) const noexcept;
+        time_point create_time(flag flags = flag::none) const noexcept;
+        time_point modify_time(flag flags = flag::none) const noexcept;
+        time_point status_time(flag flags = flag::none) const noexcept;
 
-        directory_range directory(int flags = 0) const;
-        search_range deep_search(int flags = 0) const;
-        bool exists(int flags = 0) const noexcept;
-        id_type id(int flags = 0) const noexcept;
+        directory_range directory(flag flags = flag::none) const;
+        search_range deep_search(flag flags = flag::none) const;
+        bool exists(flag flags = flag::none) const noexcept;
+        id_type id(flag flags = flag::none) const noexcept;
 
-        bool is_directory(int flags = 0) const noexcept;
-        bool is_file(int flags = 0) const noexcept;
-        bool is_special(int flags = 0) const noexcept;
+        bool is_directory(flag flags = flag::none) const noexcept;
+        bool is_file(flag flags = flag::none) const noexcept;
+        bool is_special(flag flags = flag::none) const noexcept;
         bool is_hidden() const noexcept;
         bool is_symlink() const noexcept;
 
         Path resolve() const;
         Path resolve_symlink() const;
-        uint64_t size(int flags = 0) const;
+        uint64_t size(flag flags = flag::none) const;
 
         // File system update functions
 
-        void copy_to(const Path& dst, int flags = 0) const;
+        void copy_to(const Path& dst, flag flags = flag::none) const;
         void create() const;
-        void make_directory(int flags = 0) const;
-        void make_symlink(const Path& linkname, int flags = 0) const;
-        void move_to(const Path& dst, int flags = 0) const;
-        void remove(int flags = 0) const;
+        void make_directory(flag flags = flag::none) const;
+        void make_symlink(const Path& linkname, flag flags = flag::none) const;
+        void move_to(const Path& dst, flag flags = flag::none) const;
+        void remove(flag flags = flag::none) const;
 
-        void set_access_time(int flags = 0) const { set_access_time(std::chrono::system_clock::now(), flags); }
-        void set_access_time(time_point t, int flags = 0) const;
-        void set_create_time(int flags = 0) const { set_create_time(std::chrono::system_clock::now(), flags); }
-        void set_create_time(time_point t, int flags = 0) const;
-        void set_modify_time(int flags = 0) const { set_modify_time(std::chrono::system_clock::now(), flags); }
-        void set_modify_time(time_point t, int flags = 0) const;
+        void set_access_time(flag flags = flag::none) const { set_access_time(std::chrono::system_clock::now(), flags); }
+        void set_access_time(time_point t, flag flags = flag::none) const;
+        void set_create_time(flag flags = flag::none) const { set_create_time(std::chrono::system_clock::now(), flags); }
+        void set_create_time(time_point t, flag flags = flag::none) const;
+        void set_modify_time(flag flags = flag::none) const { set_modify_time(std::chrono::system_clock::now(), flags); }
+        void set_modify_time(time_point t, flag flags = flag::none) const;
 
         // I/O functions
 
-        void load(std::string& str, size_t maxlen = npos, int flags = 0) const;
-        void save(const std::string& str, int flags = 0) const;
+        void load(std::string& str, size_t maxlen = npos, flag flags = flag::none) const;
+        void save(const std::string& str, flag flags = flag::none) const;
 
         // Process state functions
 
@@ -207,11 +211,11 @@ namespace RS::IO {
         std::pair<string_type, string_type> get_base_ext() const noexcept;
         string_type get_leaf() const noexcept;
         string_type get_root(bool allow_drive_special) const noexcept;
-        void make_canonical(int flags);
+        void make_canonical(flag flags);
         template <typename Range, typename BinaryFunction> static Path do_combine(const Range& range, BinaryFunction f);
 
         #ifdef _XOPEN_SOURCE
-            void set_file_times(time_point atime, time_point mtime, int flags) const;
+            void set_file_times(time_point atime, time_point mtime, flag flags) const;
         #else
             time_point get_file_time(int index) const noexcept;
             void set_file_time(time_point t, int index) const;
@@ -246,27 +250,29 @@ namespace RS::IO {
         public TL::InputIterator<search_iterator, const Path> {
         public:
             search_iterator() = default;
-            search_iterator(const Path& dir, int flags);
+            search_iterator(const Path& dir, flag flags);
             const Path& operator*() const noexcept;
             search_iterator& operator++();
-            bool operator==(const search_iterator& i) const noexcept { return impl == i.impl; }
+            bool operator==(const search_iterator& i) const noexcept { return impl_ == i.impl_; }
         private:
             struct impl_type;
-            std::shared_ptr<impl_type> impl;
+            std::shared_ptr<impl_type> impl_;
         };
 
         class Path::directory_iterator:
         public TL::InputIterator<directory_iterator, const Path> {
         public:
             directory_iterator() = default;
-            directory_iterator(const Path& dir, int flags);
+            directory_iterator(const Path& dir, flag flags);
             const Path& operator*() const noexcept;
             directory_iterator& operator++();
-            bool operator==(const directory_iterator& i) const noexcept { return impl == i.impl; }
+            bool operator==(const directory_iterator& i) const noexcept { return impl_ == i.impl_; }
         private:
             struct impl_type;
-            std::shared_ptr<impl_type> impl;
+            std::shared_ptr<impl_type> impl_;
         };
+
+    RS_DEFINE_BITMASK_OPERATORS(Path::flag);
 
 }
 

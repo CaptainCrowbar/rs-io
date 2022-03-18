@@ -50,9 +50,9 @@ namespace RS::IO {
                 bool ok;
             };
 
-            StatResult get_stat(const std::string& file, int flags) noexcept {
+            StatResult get_stat(const std::string& file, Path::flag flags) noexcept {
                 StatResult result;
-                result.ok = ((flags & Path::no_follow) != 0 ? lstat : stat)(file.data(), &result.st) == 0;
+                result.ok = (!! (flags & Path::flag::no_follow) ? lstat : stat)(file.data(), &result.st) == 0;
                 if (! result.ok)
                     memset(&result.st, 0, sizeof(result.st));
                 return result;
@@ -171,19 +171,19 @@ namespace RS::IO {
 
     #ifdef _XOPEN_SOURCE
 
-        Path::Path(const std::string& file, int flags):
+        Path::Path(const std::string& file, flag flags):
         filename_(file) {
             make_canonical(flags);
         }
 
     #elif
 
-        Path::Path(const std::string& file, int flags):
+        Path::Path(const std::string& file, flag flags):
         filename_(make_utf8(file)) {
             make_canonical(flags);
         }
 
-        Path::Path(const std::wstring& file, int flags):
+        Path::Path(const std::wstring& file, flag flags):
         filename_() {
             make_canonical(flags);
         }
@@ -407,7 +407,7 @@ namespace RS::IO {
 
     // File system query functions
 
-    Path::time_point Path::access_time([[maybe_unused]] int flags) const noexcept {
+    Path::time_point Path::access_time([[maybe_unused]] flag flags) const noexcept {
         time_point tp;
         #ifdef __APPLE__
             auto st = get_stat(filename_, flags).st;
@@ -421,7 +421,7 @@ namespace RS::IO {
         return tp;
     }
 
-    Path::time_point Path::create_time([[maybe_unused]] int flags) const noexcept {
+    Path::time_point Path::create_time([[maybe_unused]] flag flags) const noexcept {
         time_point tp;
         #ifdef __APPLE__
             auto st = get_stat(filename_, flags).st;
@@ -434,7 +434,7 @@ namespace RS::IO {
         return tp;
     }
 
-    Path::time_point Path::modify_time([[maybe_unused]] int flags) const noexcept {
+    Path::time_point Path::modify_time([[maybe_unused]] flag flags) const noexcept {
         time_point tp;
         #ifdef __APPLE__
             auto st = get_stat(filename_, flags).st;
@@ -448,7 +448,7 @@ namespace RS::IO {
         return tp;
     }
 
-    Path::time_point Path::status_time([[maybe_unused]] int flags) const noexcept {
+    Path::time_point Path::status_time([[maybe_unused]] flag flags) const noexcept {
         time_point tp;
         #ifdef __APPLE__
             auto st = get_stat(filename_, flags).st;
@@ -460,20 +460,20 @@ namespace RS::IO {
         return tp;
     }
 
-    Path::directory_range Path::directory(int flags) const {
+    Path::directory_range Path::directory(flag flags) const {
         directory_iterator it(*this, flags);
         return {it, {}};
     }
 
-    Path::search_range Path::deep_search(int flags) const {
+    Path::search_range Path::deep_search(flag flags) const {
         search_iterator it(*this, flags);
         return {it, {}};
     }
 
-    bool Path::exists([[maybe_unused]] int flags) const noexcept {
+    bool Path::exists([[maybe_unused]] flag flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             struct stat st;
-            if ((flags & no_follow) != 0)
+            if (!! (flags & flag::no_follow))
                 return lstat(c_name(), &st) == 0;
             else
                 return stat(c_name(), &st) == 0;
@@ -482,7 +482,7 @@ namespace RS::IO {
         #endif
     }
 
-    Path::id_type Path::id([[maybe_unused]] int flags) const noexcept {
+    Path::id_type Path::id([[maybe_unused]] flag flags) const noexcept {
         uint64_t device = 0, file = 0;
         #ifdef _XOPEN_SOURCE
             auto st = get_stat(filename_, flags).st;
@@ -503,7 +503,7 @@ namespace RS::IO {
         return {device, file};
     }
 
-    bool Path::is_directory([[maybe_unused]] int flags) const noexcept {
+    bool Path::is_directory([[maybe_unused]] flag flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             auto st = get_stat(filename_, flags).st;
             return S_ISDIR(st.st_mode);
@@ -512,7 +512,7 @@ namespace RS::IO {
         #endif
     }
 
-    bool Path::is_file([[maybe_unused]] int flags) const noexcept {
+    bool Path::is_file([[maybe_unused]] flag flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             auto st = get_stat(filename_, flags).st;
             return S_ISREG(st.st_mode);
@@ -522,7 +522,7 @@ namespace RS::IO {
         #endif
     }
 
-    bool Path::is_special([[maybe_unused]] int flags) const noexcept {
+    bool Path::is_special([[maybe_unused]] flag flags) const noexcept {
         #ifdef _XOPEN_SOURCE
             auto rc = get_stat(filename_, flags);
             return rc.ok && ! S_ISDIR(rc.st.st_mode) && ! S_ISREG(rc.st.st_mode);
@@ -552,7 +552,7 @@ namespace RS::IO {
 
     bool Path::is_symlink() const noexcept {
         #ifdef _XOPEN_SOURCE
-            auto st = get_stat(filename_, no_follow).st;
+            auto st = get_stat(filename_, flag::no_follow).st;
             return S_ISLNK(st.st_mode);
         #else
             return false;
@@ -634,7 +634,7 @@ namespace RS::IO {
         #endif
     }
 
-    uint64_t Path::size(int flags) const {
+    uint64_t Path::size(flag flags) const {
         #ifdef _XOPEN_SOURCE
             auto st = get_stat(filename_, flags).st;
             uint64_t bytes = st.st_size;
@@ -642,33 +642,33 @@ namespace RS::IO {
             auto info = get_attributes_ex(filename_);
             uint64_t bytes = (uint64_t(info.nFileSizeHigh) << 32) + uint64_t(info.nFileSizeLow);
         #endif
-        if ((flags & recurse) != 0)
+        if (!! (flags & flag::recurse))
             for (auto& child: directory())
-                bytes += child.size(no_follow | recurse);
+                bytes += child.size(flag::no_follow | flag::recurse);
         return bytes;
     }
 
     // File system update functions
 
-    void Path::copy_to(const Path& dst, int flags) const {
+    void Path::copy_to(const Path& dst, flag flags) const {
         static constexpr size_t block_size = 16384;
         if (! exists())
             throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory), name());
         if (*this == dst || id() == dst.id())
             throw std::system_error(std::make_error_code(std::errc::file_exists), dst.name());
-        if (is_directory() && (flags & recurse) == 0)
+        if (is_directory() && ! (flags & flag::recurse))
             throw std::system_error(std::make_error_code(std::errc::is_a_directory), name());
         if (dst.exists()) {
-            if ((flags & overwrite) == 0)
+            if (! (flags & flag::overwrite))
                 throw std::system_error(std::make_error_code(std::errc::file_exists), dst.name());
-            dst.remove(recurse);
+            dst.remove(flag::recurse);
         }
         if (is_symlink()) {
             resolve_symlink().make_symlink(dst);
         } else if (is_directory()) {
             dst.make_directory();
             for (auto& child: directory())
-                child.copy_to(dst / child.split_path().second, recurse);
+                child.copy_to(dst / child.split_path().second, flag::recurse);
         } else {
             auto in = OS_FUNCTION(fopen)(c_name(), OS_CHAR("rb"));
             int err = errno;
@@ -703,7 +703,7 @@ namespace RS::IO {
             save(std::string{});
     }
 
-    void Path::make_directory(int flags) const {
+    void Path::make_directory(flag flags) const {
         static const auto mkdir_call = [] (const Path& dir) {
             #ifdef _XOPEN_SOURCE
                 return mkdir(dir.c_name(), 0777);
@@ -717,10 +717,10 @@ namespace RS::IO {
         if (err == EEXIST) {
             if (is_directory())
                 return;
-            if ((flags & overwrite) == 0)
+            if (! (flags & flag::overwrite))
                 throw std::system_error(err, std::generic_category(), name());
             remove();
-        } else if (err == ENOENT && (flags & recurse) != 0 && ! empty()) {
+        } else if (err == ENOENT && !! (flags & flag::recurse) && ! empty()) {
             Path parent = split_path().first;
             if (parent == *this)
                 throw std::system_error(err, std::generic_category(), name());
@@ -732,7 +732,7 @@ namespace RS::IO {
         }
     }
 
-    void Path::make_symlink(const Path& linkname, int flags) const {
+    void Path::make_symlink(const Path& linkname, flag flags) const {
         #ifdef _XOPEN_SOURCE
             if (linkname.is_symlink()) {
                 try {
@@ -741,47 +741,47 @@ namespace RS::IO {
                 }
                 catch (const std::system_error&) {}
             }
-            if ((flags & overwrite) != 0 && linkname.exists())
+            if (!! (flags & flag::overwrite) && linkname.exists())
                 linkname.remove(flags);
             if (symlink(c_name(), linkname.c_name()) == 0)
                 return;
-            if ((flags & may_copy) == 0) {
+            if (! (flags & flag::may_copy)) {
                 int err = errno;
                 throw std::system_error(err, std::generic_category(), linkname.name() + " -> " + name());
             }
-            copy_to(linkname, recurse);
+            copy_to(linkname, flag::recurse);
         #else
-            if ((flags & may_copy) != 0)
-                copy_to(linkname, recurse);
+            if (!! (flags & flag::may_copy))
+                copy_to(linkname, flag::recurse);
             else
                 throw std::system_error(std::make_error_code(std::errc::operation_not_supported),
                     "Symbolic links are not supported on Windows");
         #endif
     }
 
-    void Path::move_to(const Path& dst, int flags) const {
+    void Path::move_to(const Path& dst, flag flags) const {
         if (! exists())
             throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory), name());
         if (*this == dst)
             return;
         if (dst.exists() && id() != dst.id()) {
-            if ((flags & overwrite) == 0)
+            if (! (flags & flag::overwrite))
                 throw std::system_error(std::make_error_code(std::errc::file_exists), dst.name());
-            dst.remove(recurse);
+            dst.remove(flag::recurse);
         }
         if (OS_FUNCTION(rename)(c_name(), dst.c_name()) == 0)
             return;
         int err = errno;
-        if (err != EXDEV || (flags & may_copy) == 0)
+        if (err != EXDEV || ! (flags & flag::may_copy))
             throw std::system_error(err, std::generic_category(), name() + " -> " + dst.name());
-        copy_to(dst, recurse);
-        remove(recurse);
+        copy_to(dst, flag::recurse);
+        remove(flag::recurse);
     }
 
-    void Path::remove(int flags) const {
-        if ((flags & recurse) != 0 && is_directory() && ! is_symlink())
+    void Path::remove(flag flags) const {
+        if (!! (flags & flag::recurse) && is_directory() && ! is_symlink())
             for (auto child: directory())
-                child.remove(recurse);
+                child.remove(flag::recurse);
         #ifdef _XOPEN_SOURCE
             int rc = std::remove(c_name());
             int err = errno;
@@ -799,7 +799,7 @@ namespace RS::IO {
         #endif
     }
 
-    void Path::set_access_time(time_point t, [[maybe_unused]] int flags) const {
+    void Path::set_access_time(time_point t, [[maybe_unused]] flag flags) const {
         #ifdef _XOPEN_SOURCE
             set_file_times(t, modify_time(), flags);
         #else
@@ -807,7 +807,7 @@ namespace RS::IO {
         #endif
     }
 
-    void Path::set_create_time([[maybe_unused]] time_point t, int /*flags*/) const {
+    void Path::set_create_time([[maybe_unused]] time_point t, flag /*flags*/) const {
         #ifdef _XOPEN_SOURCE
             throw std::system_error(std::make_error_code(std::errc::operation_not_supported),
                 "The operating system does not support modifying file creation time");
@@ -816,7 +816,7 @@ namespace RS::IO {
         #endif
     }
 
-    void Path::set_modify_time(time_point t, [[maybe_unused]] int flags) const {
+    void Path::set_modify_time(time_point t, [[maybe_unused]] flag flags) const {
         #ifdef _XOPEN_SOURCE
             set_file_times(access_time(), t, flags);
         #else
@@ -826,16 +826,16 @@ namespace RS::IO {
 
     // I/O functions
 
-    void Path::load(std::string& str, size_t maxlen, int flags) const {
+    void Path::load(std::string& str, size_t maxlen, flag flags) const {
         static constexpr size_t block_size = 16384;
         FILE* in = nullptr;
         auto guard = TL::on_scope_exit([&] { if (in != nullptr && in != stdin) fclose(in); });
-        if ((flags & std_default) != 0 && (filename_.empty() || filename_ == OS_CHAR("-"))) {
+        if (!! (flags & flag::stdio) && (filename_.empty() || filename_ == OS_CHAR("-"))) {
             in = stdin;
         } else {
             in = OS_FUNCTION(fopen)(c_name(), OS_CHAR("rb"));
             if (! in) {
-                if ((flags & may_fail) == 0)
+                if (! (flags & flag::may_fail))
                     throw std::system_error(std::make_error_code(std::errc::io_error), name());
                 str.clear();
                 return;
@@ -852,18 +852,18 @@ namespace RS::IO {
         }
     }
 
-    void Path::save(const std::string& str, int flags) const {
-        static constexpr int options = append | overwrite;
+    void Path::save(const std::string& str, flag flags) const {
+        static constexpr flag options = flag::append | flag::overwrite;
         if ((flags & options) == options)
             throw std::invalid_argument("Invalid options to Path::save()");
         FILE* out = nullptr;
         auto guard = TL::on_scope_exit([&] { if (out != nullptr && out != stdout) fclose(out); });
-        if ((flags & std_default) != 0 && (filename_.empty() || filename_ == OS_CHAR("-"))) {
+        if (!! (flags & flag::stdio) && (filename_.empty() || filename_ == OS_CHAR("-"))) {
             out = stdout;
         } else {
-            if ((flags & options) == 0 && exists())
+            if (! (flags & options) && exists())
                 throw std::system_error(std::make_error_code(std::errc::file_exists), name());
-            out = OS_FUNCTION(fopen)(c_name(), (flags & append) != 0 ? OS_CHAR("ab") : OS_CHAR("wb"));
+            out = OS_FUNCTION(fopen)(c_name(), !! (flags & flag::append) ? OS_CHAR("ab") : OS_CHAR("wb"));
             if (! out)
                 throw std::system_error(std::make_error_code(std::errc::io_error), name());
         }
@@ -958,7 +958,7 @@ namespace RS::IO {
         return filename_.substr(0, pos);
     }
 
-    void Path::make_canonical(int flags) {
+    void Path::make_canonical(flag flags) {
         static const string_type ss = {native_delimiter, native_delimiter};
         static const string_type sds = {native_delimiter, OS_CHAR('.'), native_delimiter};
         #ifndef _XOPEN_SOURCE
@@ -1020,7 +1020,7 @@ namespace RS::IO {
                 filename_[drive] -= 0x20;
         #endif
         // Validate if requested
-        if ((flags & legal_name) != 0 && ! is_legal())
+        if (!! (flags & flag::legal_name) && ! is_legal())
             throw std::invalid_argument("Invalid file name: " + Format::quote(name()));
     }
 
@@ -1039,11 +1039,11 @@ namespace RS::IO {
 
     #elif defined(_XOPEN_SOURCE)
 
-        void Path::set_file_times(time_point atime, time_point mtime, int flags) const {
+        void Path::set_file_times(time_point atime, time_point mtime, flag flags) const {
             timespec times[2];
             timepoint_to_timespec(atime, times[0]);
             timepoint_to_timespec(mtime, times[1]);
-            int utflags = (flags & no_follow) != 0 ? AT_SYMLINK_NOFOLLOW : 0;
+            int utflags = !! (flags & flag::no_follow) ? AT_SYMLINK_NOFOLLOW : 0;
             errno = 0;
             int rc = utimensat(AT_FDCWD, c_name(), times, utflags);
             int err = errno;
@@ -1109,7 +1109,7 @@ namespace RS::IO {
         Path current;
         Path prefix;
         string_type leaf;
-        int flags = 0;
+        flag flags = {};
         #ifdef _XOPEN_SOURCE
             DIR* dirptr = nullptr;
             dirent entry;
@@ -1123,19 +1123,19 @@ namespace RS::IO {
         #endif
     };
 
-    Path::directory_iterator::directory_iterator(const Path& dir, int flags) {
-        if ((flags & unicode) != 0 && ! dir.is_unicode())
+    Path::directory_iterator::directory_iterator(const Path& dir, flag flags) {
+        if (!! (flags & flag::unicode) && ! dir.is_unicode())
             return;
         #ifdef _XOPEN_SOURCE
-            impl = std::make_shared<impl_type>();
-            memset(&impl->entry, 0, sizeof(impl->entry));
-            memset(impl->padding, 0, sizeof(impl->padding));
+            impl_ = std::make_shared<impl_type>();
+            memset(&impl_->entry, 0, sizeof(impl_->entry));
+            memset(impl_->padding, 0, sizeof(impl_->padding));
             if (dir.empty())
-                impl->dirptr = opendir(".");
+                impl_->dirptr = opendir(".");
             else
-                impl->dirptr = opendir(dir.c_name());
-            if (! impl->dirptr)
-                impl.reset();
+                impl_->dirptr = opendir(dir.c_name());
+            if (! impl_->dirptr)
+                impl_.reset();
         #else
             // We need to check first that the supplied file name refers to a
             // directory, because FindFirstFile() gives a false positive for
@@ -1144,57 +1144,57 @@ namespace RS::IO {
             // can do about it.
             if (! dir.empty() && ! dir.is_root() && ! dir.is_directory())
                 return;
-            impl = std::make_shared<impl_type>();
-            memset(&impl->info, 0, sizeof(impl->info));
-            impl->first = true;
+            impl_ = std::make_shared<impl_type>();
+            memset(&impl_->info, 0, sizeof(impl_->info));
+            impl_->first = true;
             std::wstring glob = (dir / L"*").os_name();
-            impl->handle = FindFirstFileW(glob.data(), &impl->info);
-            if (! impl->handle)
-                impl.reset();
+            impl_->handle = FindFirstFileW(glob.data(), &impl_->info);
+            if (! impl_->handle)
+                impl_.reset();
         #endif
-        if (! impl)
+        if (! impl_)
             return;
-        impl->prefix = dir;
-        impl->flags = flags;
+        impl_->prefix = dir;
+        impl_->flags = flags;
         ++*this;
     }
 
     const Path& Path::directory_iterator::operator*() const noexcept {
-        return impl->current;
+        return impl_->current;
     }
 
     Path::directory_iterator& Path::directory_iterator::operator++() {
         static const string_type dot1(1, OS_CHAR('.'));
         static const string_type dot2(2, OS_CHAR('.'));
-        const bool skip_hidden = (impl->flags & no_hidden) != 0;
-        while (impl) {
+        const bool skip_hidden = !! (impl_->flags & flag::no_hidden);
+        while (impl_) {
             #ifdef _XOPEN_SOURCE
                 dirent* entptr = nullptr;
                 #ifdef __GNUC__
                     #pragma GCC diagnostic push
                     #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
                 #endif
-                int rc = readdir_r(impl->dirptr, &impl->entry, &entptr);
+                int rc = readdir_r(impl_->dirptr, &impl_->entry, &entptr);
                 #ifdef __GNUC__
                     #pragma GCC diagnostic pop
                 #endif
                 bool ok = rc == 0 && entptr;
                 if (ok)
-                    impl->leaf = impl->entry.d_name;
+                    impl_->leaf = impl_->entry.d_name;
             #else
-                bool ok = impl->first || FindNextFile(impl->handle, &impl->info);
-                impl->first = false;
+                bool ok = impl_->first || FindNextFile(impl_->handle, &impl_->info);
+                impl_->first = false;
                 if (ok)
-                    impl->leaf = impl->info.cFileName;
+                    impl_->leaf = impl_->info.cFileName;
             #endif
             if (! ok) {
-                impl.reset();
+                impl_.reset();
                 break;
             }
-            if (impl->leaf != dot1 && impl->leaf != dot2
-                    && ((impl->flags & unicode) == 0 || Format::is_valid_utf(impl->leaf))) {
-                impl->current = impl->prefix / impl->leaf;
-                if (! skip_hidden || ! impl->current.is_hidden())
+            if (impl_->leaf != dot1 && impl_->leaf != dot2
+                    && (! (impl_->flags & flag::unicode) || Format::is_valid_utf(impl_->leaf))) {
+                impl_->current = impl_->prefix / impl_->leaf;
+                if (! skip_hidden || ! impl_->current.is_hidden())
                     break;
             }
         }
@@ -1205,52 +1205,52 @@ namespace RS::IO {
 
     struct Path::search_iterator::impl_type {
         std::vector<directory_range> stack;
-        int flagset = 0;
+        flag flagset = {};
         bool revisit = false;
     };
 
-    Path::search_iterator::search_iterator(const Path& dir, int flags) {
+    Path::search_iterator::search_iterator(const Path& dir, flag flags) {
         if (! dir.is_directory(flags))
             return;
         auto range = dir.directory(flags);
         if (range.empty())
             return;
-        impl = std::make_shared<impl_type>();
-        impl->stack.push_back(range);
-        impl->flagset = flags;
-        if (impl->flagset & bottom_up) {
+        impl_ = std::make_shared<impl_type>();
+        impl_->stack.push_back(range);
+        impl_->flagset = flags;
+        if (!! (impl_->flagset & flag::bottom_up)) {
             for (;;) {
-                range = (**this).directory(impl->flagset);
+                range = (**this).directory(impl_->flagset);
                 if (range.empty())
                     break;
-                impl->stack.push_back(range);
+                impl_->stack.push_back(range);
             }
         }
-        impl->revisit = (impl->flagset & bottom_up) && ! impl->stack.empty() && (**this).is_directory();
-        if (impl->stack.empty())
-            impl.reset();
+        impl_->revisit = !! (impl_->flagset & flag::bottom_up) && ! impl_->stack.empty() && (**this).is_directory();
+        if (impl_->stack.empty())
+            impl_.reset();
     }
 
     const Path& Path::search_iterator::operator*() const noexcept {
-        return *impl->stack.back().first;
+        return *impl_->stack.back().first;
     }
 
     Path::search_iterator& Path::search_iterator::operator++() {
         do {
-            if ((**this).is_directory(impl->flagset) && ! impl->revisit) {
-                auto range = (**this).directory(impl->flagset);
-                impl->revisit = range.empty();
-                if (! impl->revisit)
-                    impl->stack.push_back(range);
+            if ((**this).is_directory(impl_->flagset) && ! impl_->revisit) {
+                auto range = (**this).directory(impl_->flagset);
+                impl_->revisit = range.empty();
+                if (! impl_->revisit)
+                    impl_->stack.push_back(range);
             } else {
-                ++impl->stack.back().first;
-                impl->revisit = impl->stack.back().empty();
-                if (impl->revisit)
-                    impl->stack.pop_back();
+                ++impl_->stack.back().first;
+                impl_->revisit = impl_->stack.back().empty();
+                if (impl_->revisit)
+                    impl_->stack.pop_back();
             }
-        } while (! impl->stack.empty() && (**this).is_directory(impl->flagset) && impl->revisit != bool(impl->flagset & bottom_up));
-        if (impl->stack.empty())
-            impl.reset();
+        } while (! impl_->stack.empty() && (**this).is_directory(impl_->flagset) && impl_->revisit != !! (impl_->flagset & flag::bottom_up));
+        if (impl_->stack.empty())
+            impl_.reset();
         return *this;
     }
 
