@@ -2,9 +2,9 @@
 
 #include "rs-io/path.hpp"
 #include "rs-io/utility.hpp"
-#include "rs-format/enum.hpp"
 #include "rs-format/format.hpp"
 #include "rs-format/string.hpp"
+#include "rs-tl/enum.hpp"
 #include "rs-tl/iterator.hpp"
 #include <cstdio>
 #include <string>
