@@ -632,7 +632,8 @@ system.
 ## I/O functions
 
 ```c++
-void Path::load(std::string& str, size_t maxlen = npos, flag flags = flag::none) const;
+void Path::load(std::string& str, size_t maxlen = npos,
+    flag flags = flag::none) const;
 ```
 
 Read the contents of a file into a string (erasing its former contents).
