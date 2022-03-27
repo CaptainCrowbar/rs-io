@@ -1,11 +1,12 @@
 #pragma once
 
+#include "rs-tl/types.hpp"
 #include <string>
 #include <utility>
 
 namespace RS::IO {
 
-    constexpr size_t npos = std::string::npos;
+    using RS::TL::npos;
 
     template <typename T, typename Del, T Null = T()>
     class Resource{

@@ -3,6 +3,7 @@
 #include "rs-io/time.hpp"
 #include "rs-io/utility.hpp"
 #include "rs-tl/thread.hpp"
+    using RS::TL::npos;
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -55,8 +56,6 @@ namespace RS::IO {
         #else
             using native_handle = void*; // HANDLE
         #endif
-
-        static constexpr size_t npos = std::string::npos;
 
         Channel() = default;
 
