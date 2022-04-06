@@ -51,7 +51,18 @@ namespace RS::IO {
         cv_.notify_all();
     }
 
-    bool TimerChannel::wait_for(duration t) {
+    void TimerChannel::flush() noexcept {
+        std::unique_lock lock(mutex_);
+        if (! open_)
+            return;
+        auto now = clock::now();
+        if (now < next_tick_)
+            return;
+        auto skip = size_t((now - next_tick_).count() / delta_.count()) + 1;
+        step(skip);
+    }
+
+    bool TimerChannel::do_wait_for(duration t) {
         std::unique_lock lock(mutex_);
         if (! open_)
             return true;
@@ -71,17 +82,6 @@ namespace RS::IO {
         if (open_)
             step();
         return true;
-    }
-
-    void TimerChannel::flush() noexcept {
-        std::unique_lock lock(mutex_);
-        if (! open_)
-            return;
-        auto now = clock::now();
-        if (now < next_tick_)
-            return;
-        auto skip = size_t((now - next_tick_).count() / delta_.count()) + 1;
-        step(skip);
     }
 
     void TimerChannel::step(size_t n) {
@@ -123,13 +123,6 @@ namespace RS::IO {
         return n;
     }
 
-    bool BufferChannel::wait_for(duration t) {
-        std::unique_lock lock(mutex_);
-        if (open_ && ofs_ == buf_.size() && t > duration())
-            cv_.wait_for(lock, t, [&] { return ! open_ || ofs_ < buf_.size(); });
-        return ! open_ || ofs_ < buf_.size();
-    }
-
     bool BufferChannel::write(const void* src, size_t len) {
         std::unique_lock lock(mutex_);
         if (! open_)
@@ -144,6 +137,13 @@ namespace RS::IO {
         std::unique_lock lock(mutex_);
         buf_.clear();
         ofs_ = 0;
+    }
+
+    bool BufferChannel::do_wait_for(duration t) {
+        std::unique_lock lock(mutex_);
+        if (open_ && ofs_ == buf_.size() && t > duration())
+            cv_.wait_for(lock, t, [&] { return ! open_ || ofs_ < buf_.size(); });
+        return ! open_ || ofs_ < buf_.size();
     }
 
     // Class Dispatch

@@ -29,19 +29,11 @@ class Dispatch;
 ## Channel base class
 
 ```c++
-class Channel: public Waiter;
-    using Channel::clock = std::chrono::system_clock;
-    using Channel::duration = clock::duration;
-    using Channel::time_point = clock::time_point;
+class Channel: public TL::Waiter;
     virtual Channel::~Channel() noexcept;
     virtual void Channel::close() noexcept = 0;
     virtual bool Channel::is_closed() const noexcept = 0;
-    virtual bool Channel::is_synchronous() const noexcept; // false
-    virtual bool Channel::poll();
-    virtual void Channel::wait();
-    virtual bool Channel::wait_for(duration t);
-    virtual bool Channel::wait_until(time_point t);
-    protected Channel::Channel() noexcept;
+    virtual bool Channel::is_synchronous() const noexcept;
 ```
 
 The base class for all readable message channels. All concrete channel classes
@@ -57,7 +49,8 @@ ready for reading or closed.
 
 If `is_synchronous()` is true, the channel can only be used in a synchronous
 dispatch handler, usually because it calls an underlying native API that is
-only intended to be used from the main thread.
+only intended to be used from the main thread. The default implementation
+returns false;
 
 ## Intermediate base classes
 

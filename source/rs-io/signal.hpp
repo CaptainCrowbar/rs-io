@@ -26,9 +26,10 @@ namespace RS::IO {
         bool is_closed() const noexcept override;
         bool is_synchronous() const noexcept override { return false; }
         bool read(int& t) override;
-        bool wait_for(duration t) override;
         bool wait_until(time_point t) override;
         static std::string name(int s);
+    protected:
+        bool do_wait_for(duration t) override;
     private:
         #ifdef _XOPEN_SOURCE
             signal_list signals_;

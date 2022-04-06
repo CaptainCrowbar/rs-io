@@ -68,7 +68,7 @@ namespace RS::IO {
         return 0;
     }
 
-    bool StreamProcess::wait_for(duration t) {
+    bool StreamProcess::do_wait_for(duration t) {
         using namespace std::chrono;
         if (! fp_)
             return true;
@@ -140,7 +140,7 @@ namespace RS::IO {
         return true;
     }
 
-    bool TextProcess::wait_for(duration t) {
+    bool TextProcess::do_wait_for(duration t) {
         using namespace std::chrono;
         t = std::max(t, duration());
         auto deadline = system_clock::now() + t;

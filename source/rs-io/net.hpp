@@ -210,7 +210,6 @@ namespace RS::IO {
         void close() noexcept override { do_close(); }
         bool is_closed() const noexcept override { return sock_ == no_socket; }
         size_t read(void* dst, size_t maxlen) override { return do_read(dst, maxlen, nullptr); }
-        bool wait_for(duration t) override;
         SocketAddress local() const;
         SocketAddress remote() const;
         NativeSocket native() const noexcept { return sock_; }
@@ -223,6 +222,7 @@ namespace RS::IO {
     protected:
         native_handle get_handle() const noexcept override { return reinterpret_cast<native_handle>(sock_); }
         void do_close() noexcept;
+        bool do_wait_for(duration t) override;
     private:
         NativeSocket sock_ = no_socket;
         size_t do_read(void* dst, size_t maxlen, SocketAddress* from);
@@ -257,9 +257,10 @@ namespace RS::IO {
         void close() noexcept override { sock_.close(); }
         bool is_closed() const noexcept override { return sock_.is_closed(); }
         bool read(std::unique_ptr<TcpClient>& t) override;
-        bool wait_for(duration t) override { return sock_.wait_for(t); }
         SocketAddress local() const { return sock_.local(); }
         NativeSocket native() const noexcept { return sock_.native(); }
+    protected:
+        bool do_wait_for(duration t) override { return sock_.wait_for(t); }
     private:
         Socket sock_;
     };
@@ -288,7 +289,6 @@ namespace RS::IO {
         void close() noexcept override { open_ = false; }
         bool is_closed() const noexcept override { return ! open_; }
         bool read(Channel*& t) override;
-        bool wait_for(duration t) override;
         void clear() noexcept;
         bool empty() const noexcept { return channels_.empty(); }
         void erase(Socket& s) noexcept { do_erase(s); }
@@ -296,6 +296,8 @@ namespace RS::IO {
         void insert(Socket& s) { do_insert(s, s.native()); }
         void insert(TcpServer& s) { do_insert(s, s.native()); }
         size_t size() const noexcept { return channels_.size(); }
+    protected:
+        bool do_wait_for(duration t) override;
     private:
         friend class Socket;
         friend class TcpServer;

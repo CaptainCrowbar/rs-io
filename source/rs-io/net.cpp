@@ -504,10 +504,6 @@ namespace RS::IO {
         sock_ = rc.res;
     }
 
-    bool Socket::wait_for(duration t) {
-        return sock_ == no_socket || SocketSet::do_select(&sock_, 1, t);
-    }
-
     SocketAddress Socket::local() const {
         if (sock_ == no_socket)
             return {};
@@ -539,6 +535,10 @@ namespace RS::IO {
             close_socket(sock_);
             sock_ = no_socket;
         }
+    }
+
+    bool Socket::do_wait_for(duration t) {
+        return sock_ == no_socket || SocketSet::do_select(&sock_, 1, t);
     }
 
     size_t Socket::do_read(void* dst, size_t maxlen, SocketAddress* from) {
@@ -666,7 +666,13 @@ namespace RS::IO {
         return true;
     }
 
-    bool SocketSet::wait_for(duration t) {
+    void SocketSet::clear() noexcept {
+        channels_.clear();
+        natives_.clear();
+        current_ = nullptr;
+    }
+
+    bool SocketSet::do_wait_for(duration t) {
         if (! open_ || current_)
             return true;
         size_t index = std::string::npos;
@@ -674,12 +680,6 @@ namespace RS::IO {
         if (rc && index < channels_.size())
             current_ = channels_[index];
         return rc;
-    }
-
-    void SocketSet::clear() noexcept {
-        channels_.clear();
-        natives_.clear();
-        current_ = nullptr;
     }
 
     void SocketSet::do_erase(Channel& c) noexcept {

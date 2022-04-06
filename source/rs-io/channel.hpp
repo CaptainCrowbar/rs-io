@@ -3,7 +3,6 @@
 #include "rs-io/time.hpp"
 #include "rs-io/utility.hpp"
 #include "rs-tl/thread.hpp"
-    using RS::TL::npos;
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -20,6 +19,8 @@
 
 namespace RS::IO {
 
+    using RS::TL::npos;
+
     // Forward declarations
 
     class BufferChannel;
@@ -35,7 +36,7 @@ namespace RS::IO {
     // Channel base class
 
     class Channel:
-    public Waiter {
+    public TL::Waiter {
 
     public:
 
@@ -118,10 +119,11 @@ namespace RS::IO {
         TimerChannel& operator=(TimerChannel&&) = delete;
         void close() noexcept override;
         bool is_closed() const noexcept override { return ! open_; }
-        bool wait_for(duration t) override;
         void flush() noexcept;
         duration interval() const noexcept { return delta_; }
         auto next() const noexcept { return next_tick_; }
+    protected:
+        bool do_wait_for(duration t) override;
     private:
         mutable std::mutex mutex_;
         std::condition_variable cv_;
@@ -145,7 +147,8 @@ namespace RS::IO {
         void close() noexcept override;
         bool is_closed() const noexcept override { return ! gen_; }
         bool read(T& t) override;
-        bool wait_for(Channel::duration /*t*/) override { return true; }
+    protected:
+        bool do_wait_for(Channel::duration /*t*/) override { return true; }
     private:
         std::mutex mutex_;
         generator gen_;
@@ -177,10 +180,11 @@ namespace RS::IO {
         void close() noexcept override;
         bool is_closed() const noexcept override { return ! open_; }
         bool read(T& t) override;
-        bool wait_for(Channel::duration t) override;
         void clear() noexcept;
         bool write(const T& t);
         bool write(T&& t);
+    protected:
+        bool do_wait_for(Channel::duration t) override;
     private:
         std::mutex mutex_;
         std::condition_variable cv_;
@@ -205,14 +209,6 @@ namespace RS::IO {
             if (! queue_.empty())
                 cv_.notify_all();
             return true;
-        }
-
-        template <typename T>
-        bool QueueChannel<T>::wait_for(Channel::duration t) {
-            std::unique_lock lock(mutex_);
-            if (open_ && queue_.empty() && t > Channel::duration())
-                cv_.wait_for(lock, t, [&] { return ! open_ || ! queue_.empty(); });
-            return ! open_ || ! queue_.empty();
         }
 
         template <typename T>
@@ -241,6 +237,14 @@ namespace RS::IO {
             return true;
         }
 
+        template <typename T>
+        bool QueueChannel<T>::do_wait_for(Channel::duration t) {
+            std::unique_lock lock(mutex_);
+            if (open_ && queue_.empty() && t > Channel::duration())
+                cv_.wait_for(lock, t, [&] { return ! open_ || ! queue_.empty(); });
+            return ! open_ || ! queue_.empty();
+        }
+
     template <typename T>
     class ValueChannel:
     public MessageChannel<T> {
@@ -254,10 +258,11 @@ namespace RS::IO {
         void close() noexcept override;
         bool is_closed() const noexcept override { return status == -1; }
         bool read(T& t) override;
-        bool wait_for(Channel::duration t) override;
         void clear() noexcept;
         bool write(const T& t);
         bool write(T&& t);
+    protected:
+        bool do_wait_for(Channel::duration t) override;
     private:
         std::mutex mutex_;
         std::condition_variable cv_;
@@ -280,14 +285,6 @@ namespace RS::IO {
             t = value_;
             status = 0;
             return true;
-        }
-
-        template <typename T>
-        bool ValueChannel<T>::wait_for(Channel::duration t) {
-            std::unique_lock lock(mutex_);
-            if (status == 0 && t > Channel::duration())
-                cv_.wait_for(lock, t, [&] { return status != 0; });
-            return status;
         }
 
         template <typename T>
@@ -316,6 +313,14 @@ namespace RS::IO {
             return true;
         }
 
+        template <typename T>
+        bool ValueChannel<T>::do_wait_for(Channel::duration t) {
+            std::unique_lock lock(mutex_);
+            if (status == 0 && t > Channel::duration())
+                cv_.wait_for(lock, t, [&] { return status != 0; });
+            return status;
+        }
+
     class BufferChannel:
     public StreamChannel {
     public:
@@ -327,10 +332,11 @@ namespace RS::IO {
         void close() noexcept override;
         bool is_closed() const noexcept override { return ! open_; }
         size_t read(void* dst, size_t maxlen) override;
-        bool wait_for(duration t) override;
         void clear() noexcept;
         bool write(std::string_view src) { return write(src.data(), src.size()); }
         bool write(const void* src, size_t len);
+    protected:
+        bool do_wait_for(duration t) override;
     private:
         std::mutex mutex_;
         std::condition_variable cv_;

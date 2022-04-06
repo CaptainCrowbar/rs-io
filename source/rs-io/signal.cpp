@@ -74,7 +74,7 @@ namespace RS::IO {
 
         #if defined(__APPLE__)
 
-            bool PosixSignal::wait_for(duration t) {
+            bool PosixSignal::do_wait_for(duration t) {
                 static const duration delta = 10ms;
                 sigset_t pending;
                 for (;;) {
@@ -106,7 +106,7 @@ namespace RS::IO {
 
         #else
 
-            bool PosixSignal::wait_for(duration t) {
+            bool PosixSignal::do_wait_for(duration t) {
                 if (! open_ || ! queue_.empty())
                     return true;
                 t = std::max(t, duration());
@@ -162,10 +162,6 @@ namespace RS::IO {
             return false;
         }
 
-        bool PosixSignal::wait_for(duration t) {
-            return Channel::wait_for(t);
-        }
-
         bool PosixSignal::wait_until(time_point t) {
             for (;;) {
                 if (available())
@@ -174,6 +170,10 @@ namespace RS::IO {
                     return false;
                 std::this_thread::sleep_for(1ms);
             }
+        }
+
+        bool PosixSignal::do_wait_for(duration t) {
+            return Channel::wait_for(t);
         }
 
         bool PosixSignal::available() const noexcept {
