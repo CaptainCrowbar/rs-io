@@ -89,7 +89,7 @@ namespace RS::IO {
 
         // scheme:[//][[user[:password]@]host[:port]][/path][?query][#fragment]
 
-        std::string text_;      // Other fidels are offsets into this string
+        std::string text_;      // Other fields are offsets into this string
         int ofs_user_ = 0;      // user
         int ofs_password_ = 0;  // :password@
         int ofs_host_ = 0;      // host

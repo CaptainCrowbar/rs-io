@@ -21,7 +21,7 @@ This class holds a URI, assumed to follow the format:
 static constexpr int Uri::lone_keys = 1;
 ```
 
-Flag used in teh `make_query()` function.
+Flag used in the `make_query()` function.
 
 ```c++
 Uri::Uri() noexcept;
