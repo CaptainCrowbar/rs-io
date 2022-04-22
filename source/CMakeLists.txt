@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.16)
 # and propagate the new version to version.hpp.
 
 project(rs-io
-    VERSION 0.2.29
+    VERSION 0.2.30
     LANGUAGES CXX
 )
 
@@ -83,7 +83,8 @@ add_executable(${unittest}
     test/signal-test.cpp
     test/named-mutex-test.cpp
     test/thread-pool-test.cpp
-    test/uri-test.cpp
+    test/uri-schemes-test.cpp
+    test/uri-general-test.cpp
     test/unit-test.cpp
 )
 

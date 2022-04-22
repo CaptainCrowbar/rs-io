@@ -24,7 +24,6 @@ namespace RS::IO {
         Uri(const std::string& scheme, const std::string& user, const std::string& password, const std::string& host, uint16_t port = 0,
             const std::string& path = {}, const std::string& query = {}, const std::string& fragment = {});
 
-        bool has_scheme() const noexcept { return ! empty(); }
         bool has_slashes() const noexcept { return ! empty() && text_[ofs_user_ - 1] == '/'; }
         bool has_user() const noexcept { return ! empty() && ofs_password_ > ofs_user_; }
         bool has_password() const noexcept { return ! empty() && ofs_host_ - ofs_password_ > 1; }
@@ -43,7 +42,7 @@ namespace RS::IO {
         std::string query() const { return has_query() ? decode(text_.substr(ofs_query_ + 1, ofs_fragment_ - ofs_query_ - 1)) : std::string(); }
         std::string fragment() const { return has_fragment() ? decode(text_.substr(ofs_fragment_ + 1, npos)) : std::string(); }
 
-        void set_scheme(const std::string& new_scheme);
+        void set_scheme(const std::string& new_scheme, bool smart = true);
         void set_user(const std::string& new_user);
         void set_password(const std::string& new_password);
         void set_host(const std::string& new_host);

@@ -92,10 +92,12 @@ int main(int argc, char** argv) {
     UNIT_TEST(rs_io_thread_pool_each)
     UNIT_TEST(rs_io_thread_pool_timing)
 
-    // uri-test.cpp
+    // uri-schemes-test.cpp
     UNIT_TEST(rs_io_uri_parse_http)
     UNIT_TEST(rs_io_uri_parse_file)
     UNIT_TEST(rs_io_uri_parse_mailto)
+
+    // uri-general-test.cpp
     UNIT_TEST(rs_io_uri_assembly)
     UNIT_TEST(rs_io_uri_modifiers)
     UNIT_TEST(rs_io_uri_navigation)

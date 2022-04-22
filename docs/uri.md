@@ -56,7 +56,6 @@ Uri& Uri::operator=(Uri&& u) noexcept;
 Other life cycle functions.
 
 ```c++
-bool Uri::has_scheme() const noexcept;
 bool Uri::has_slashes() const noexcept;
 bool Uri::has_user() const noexcept;
 bool Uri::has_password() const noexcept;
@@ -67,7 +66,8 @@ bool Uri::has_query() const noexcept;
 bool Uri::has_fragment() const noexcept;
 ```
 
-Query whether a given URI element is present.
+Query whether a given URI element is present. There is no `has_scheme()`
+because the scheme is always present if the URI is not empty.
 
 ```c++
 std::string Uri::scheme() const;
@@ -89,7 +89,7 @@ a question mark is considered to include an empty query string, which is not
 the same thing as one with no query part).
 
 ```c++
-void Uri::set_scheme(const std::string& new_scheme);
+void Uri::set_scheme(const std::string& new_scheme, bool smart = true);
 void Uri::set_user(const std::string& new_user);
 void Uri::set_password(const std::string& new_password);
 void Uri::set_host(const std::string& new_host);
@@ -106,23 +106,18 @@ element; this is not true of the query and fragment elements (e.g.
 `set_user("")` is equivalent to `clear_user()`, but `set_query("")` is not
 equivalent to `clear_query()`).
 
-By default, `set_scheme()` will follow the
-scheme with two slashes if the previous URI had slashes there, or if it was
-empty; this can be overridden by explicitly ending the new scheme in `":"` or
-`"://"`.
+The scheme will always be converted to lower case. If the `smart` argument to
+`set_scheme()` is true (this is the default), and the scheme supplied does
+not end in `"://"`, the slashes will be added unless the scheme is
+`"mailto"`.
 
-All of these can throw `std::invalid_argument`:
+All of these except `set_scheme()` will throw `std::invalid_argument` if the
+existing URI is empty, or under the following circumstances:
 
-* `set_scheme()` if the scheme is invalid
-    (it is expected to start with an ASCII letter and contain only letters, digits, dots, and plus and minus signs).
-* `set_user()` if the host is empty (and the argument is not empty).
-* `set_password()` if the user or host is empty (and the argument is not empty).
-* `set_host()` if the URI is empty (and the argument is not empty).
-* `set_port()` if the URI is empty (and the argument is not empty).
-* `set_path()` if the URI is empty (and the argument is not empty),
-    or if the path contains two consecutive slashes.
-* `set_query()` if the URI is empty.
-* `set_fragment()` if the URI is empty.
+* `set_scheme()` if the scheme is invalid (it must match `/[a-z][a-z0-9.+-]*(:(//)?)?/`).
+* `set_user()` if the host is empty and the new user is not empty.
+* `set_password()` if the user or host is empty and the new password is not empty.
+* `set_path()` if the path contains `"//"`.
 
 ```c++
 void Uri::clear_user() noexcept;
@@ -234,9 +229,9 @@ pairs; an equals sign is inserted between keys and values, except that it will
 be left out if the value is empty and the `lone_keys` flag is set.
 
 The `parse_query()` function breaks down a query string into a vector of
-key/value pairs; if no delimiter is explicitly supplied, whichever of `'&'` or
-`';'` appears in the string will be used. Key and value strings are percent
-encoded by `make_query()` and decoded by `parse_query()`.
+key/value pairs; if no delimiter is explicitly supplied, whichever of `'&'`
+or `';'` appears first in the string will be used. Key and value strings are
+percent encoded by `make_query()` and decoded by `parse_query()`.
 
 ```c++
 bool operator==(const Uri& u, const Uri& v) noexcept;

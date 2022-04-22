@@ -42,21 +42,19 @@ namespace RS::IO {
         set_fragment(fragment);
     }
 
-    void Uri::set_scheme(const std::string& new_scheme) {
+    void Uri::set_scheme(const std::string& new_scheme, bool smart) {
 
-        static const Regex pattern("[a-z][a-z0-9+.-]*(:(?://)?)?", Regex::full | Regex::icase | Regex::optimize);
+        static const Regex pattern("[a-z][a-z0-9.+-]*(:(//)?)?", Regex::full | Regex::optimize);
 
-        auto match = pattern(new_scheme);
+        std::string scheme_text = ascii_lowercase(new_scheme);
+        auto match = pattern(scheme_text);
         if (! match)
             throw std::invalid_argument("Invalid URI scheme: {0:q}"_fmt(new_scheme));
 
-        std::string scheme_text = ascii_lowercase(new_scheme);
-
-        if (! match.matched(1)) {
+        if (! match.matched(1))
             scheme_text += ':';
-            if (empty() || has_slashes())
-                scheme_text += "//";
-        }
+        if (smart && ! match.matched(2) && scheme_text != "mailto:")
+            scheme_text += "//";
 
         int delta = int(scheme_text.size()) - ofs_user_;
         text_.replace(0, ofs_user_, scheme_text);
@@ -72,12 +70,12 @@ namespace RS::IO {
 
     void Uri::set_user(const std::string& new_user) {
 
+        check_nonempty();
+
         if (new_user.empty()) {
             clear_user();
             return;
         }
-
-        check_nonempty();
 
         if (! has_host())
             throw std::invalid_argument("Can't set user on URI with no host");
@@ -105,12 +103,12 @@ namespace RS::IO {
 
     void Uri::set_password(const std::string& new_password) {
 
+        check_nonempty();
+
         if (new_password.empty()) {
             clear_password();
             return;
         }
-
-        check_nonempty();
 
         if (! has_user())
             throw std::invalid_argument("Can't set password on URI with no user");
@@ -129,12 +127,12 @@ namespace RS::IO {
 
     void Uri::set_host(const std::string& new_host) {
 
+        check_nonempty();
+
         if (new_host.empty()) {
             clear_host();
             return;
         }
-
-        check_nonempty();
 
         std::string host_text = encode(new_host);
         int delta = int(host_text.size()) - (ofs_port_ - ofs_host_);
@@ -149,12 +147,12 @@ namespace RS::IO {
 
     void Uri::set_port(uint16_t new_port) {
 
+        check_nonempty();
+
         if (new_port == 0) {
             clear_port();
             return;
         }
-
-        check_nonempty();
 
         if (! has_host())
             throw std::invalid_argument("Can't set port on URI with no host");
@@ -171,12 +169,12 @@ namespace RS::IO {
 
     void Uri::set_path(const std::string& new_path) {
 
+        check_nonempty();
+
         if (new_path.empty()) {
             clear_path();
             return;
         }
-
-        check_nonempty();
 
         if (new_path.find("//") != npos)
             throw std::invalid_argument("Invalid URI path: {0:q}"_fmt(new_path));
@@ -196,12 +194,12 @@ namespace RS::IO {
 
     void Uri::set_query(const std::string& new_query) {
 
+        check_nonempty();
+
         if (new_query.empty()) {
             clear_query();
             return;
         }
-
-        check_nonempty();
 
         int delta = int(new_query.size() + 1) - (ofs_fragment_ - ofs_query_);
         std::string q = "?";
@@ -212,12 +210,16 @@ namespace RS::IO {
     }
 
     void Uri::set_fragment(const std::string& new_fragment) {
+
+        check_nonempty();
+
         if (new_fragment.empty()) {
             clear_fragment();
             return;
         }
-        check_nonempty();
+
         text_.replace(ofs_fragment_, npos, '#' + encode(new_fragment));
+
     }
 
     void Uri::clear_user() noexcept {
