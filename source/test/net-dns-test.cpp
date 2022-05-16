@@ -32,10 +32,14 @@ void test_rs_io_net_dns_query() {
         // std::cout << "... " << a << " => " << name << "\n";
     }
 
-    TRY(addr = Dns::host_to_ip(bad_name));
-    TEST(! addr);
+    #ifndef __linux__ // Takes too long
 
-    TRY(addrs = Dns::host_to_ips(bad_name));
-    TEST(addrs.empty());
+        TRY(addr = Dns::host_to_ip(bad_name));
+        TEST(! addr);
+
+        TRY(addrs = Dns::host_to_ips(bad_name));
+        TEST(addrs.empty());
+
+    #endif
 
 }
