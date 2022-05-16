@@ -97,7 +97,8 @@ namespace RS::IO {
         #else
 
             bool NamedMutex::try_lock_until(system_clock::time_point abs_time) {
-                auto ts = duration_to_timespec(abs_time.from_epoch());
+                std::timespec ts;
+                duration_to_timespec(abs_time.time_since_epoch(), ts);
                 errno = 0;
                 int rc = sem_timedwait(SemPtr(handle_), &ts);
                 int err = errno;
