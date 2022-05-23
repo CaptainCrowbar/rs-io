@@ -911,7 +911,7 @@ namespace RS::IO {
                 dot = npos;
             }
         auto base = filename_.substr(start, dot - start);
-        std::wstring ext;
+        string_type ext;
         if (dot < filename_.size())
             ext = filename_.substr(dot);
         return {base, ext};
