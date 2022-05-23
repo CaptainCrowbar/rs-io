@@ -58,7 +58,8 @@ of `"/foo/bar/hello.txt"`, or `"C:\foo\bar\hello.txt"`, is `"hello.txt"`).
 Exceptions will be thrown under the following circumstances:
 
 * On Windows, any function that accepts a file name as a `std::string` will
-  throw `std::invalid_argument` if the string is not valid UTF-8.
+  throw `std::invalid_argument` if the string is not valid UTF-8. This does
+  not apply to `std::wstring` arguments, which can accept invalid UTF-16.
 * Any function not marked `noexcept` may throw `std::bad_alloc` if memory
   allocation fails.
 * Exception behaviour is only documented for individual functions where it
