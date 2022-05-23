@@ -206,8 +206,8 @@ namespace RS::IO {
             Winio() = default;
             explicit Winio(void* f) noexcept: fh_(f) {}
             explicit Winio(const Path& f, IoMode m = IoMode::read);
-            Winio(const Path& f, uint32_t desired_access, uint32_t share_mode, LPSECURITY_ATTRIBUTES security_attributes,
-                uint32_t creation_disposition, uint32_t flags_and_attributes = 0, HANDLE template_file = nullptr);
+            Winio(const Path& f, uint32_t desired_access, uint32_t share_mode, void* security_attributes,
+                uint32_t creation_disposition, uint32_t flags_and_attributes = 0, void* template_file = nullptr);
 
             Winio(const Winio&) = delete;
             Winio(Winio&&) = default;
@@ -226,9 +226,9 @@ namespace RS::IO {
             void* release() noexcept { return fh_.release(); }
 
             static Winio null();
-            static Winio std_input() { return Winio(GetStdHandle(STD_INPUT_HANDLE), false); }
-            static Winio std_output() { return Winio(GetStdHandle(STD_OUTPUT_HANDLE), false); }
-            static Winio std_error() { return Winio(GetStdHandle(STD_ERROR_HANDLE), false); }
+            static Winio std_input();
+            static Winio std_output();
+            static Winio std_error();
 
         private:
 

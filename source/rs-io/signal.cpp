@@ -173,7 +173,7 @@ namespace RS::IO {
         }
 
         bool PosixSignal::do_wait_for(duration t) {
-            return Channel::wait_for(t);
+            return wait_until(clock::now() + t);
         }
 
         bool PosixSignal::available() const noexcept {

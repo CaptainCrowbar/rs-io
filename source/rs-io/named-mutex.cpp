@@ -1,5 +1,6 @@
 #include "rs-io/named-mutex.hpp"
 #include "rs-io/time.hpp"
+#include "rs-format/unicode.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <ctime>
@@ -13,6 +14,7 @@
     #include <windows.h>
 #endif
 
+using namespace RS::Format;
 using namespace std::chrono;
 using namespace std::literals;
 
@@ -146,7 +148,7 @@ namespace RS::IO {
         }
 
         std::string NamedMutex::name() const {
-            return to_utf8(path_.substr(6));
+            return to_utf8(decode_string(path_.substr(6)));
         }
 
         void NamedMutex::lock() {

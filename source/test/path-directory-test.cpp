@@ -34,7 +34,12 @@ void test_rs_io_path_directory_iterators() {
     files.clear();
     TRY(std::copy(range.begin(), range.end(), std::back_inserter(files)));
     TRY(std::sort(files.begin(), files.end()));
-    TEST_EQUAL(files[0], Path("CMakeCache.txt"));
+
+    #ifdef _MSC_VER
+        TEST_EQUAL(files[0], Path("ALL_BUILD.vcxproj"));
+    #else
+        TEST_EQUAL(files[0], Path("CMakeCache.txt"));
+    #endif
 
     TRY(dir = "../source/rs-io");
     TRY(range = dir.directory());

@@ -101,7 +101,7 @@ void test_rs_io_path_file_system_queries() {
     TEST_EQUAL(none.size(), 0u);
     TEST_EQUAL(none.size(Path::flag::recurse), 0u);
     TEST(Path(".").size(Path::flag::recurse) > 1'000'000);
-    TEST(cmfiles.size(Path::flag::recurse) > 1'000'000);
+    TEST(cmfiles.size(Path::flag::recurse) > 100'000);
 
 }
 
@@ -263,7 +263,7 @@ void test_rs_io_path_io() {
 
     TRY(cmcache.load(s));
     TEST_EQUAL(s.size(), cmcache.size());
-    TEST_EQUAL(s.substr(0, 31), "# This is the CMakeCache file.\n");
+    TEST_EQUAL(s.substr(0, 30), "# This is the CMakeCache file.");
     TRY(cmcache.load(s, 10));
     TEST_EQUAL(s, "# This is ");
 

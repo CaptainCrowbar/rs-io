@@ -1,4 +1,5 @@
 #include "rs-io/stdio.hpp"
+#include "rs-format/unicode.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -24,6 +25,8 @@
     #define IO_FUNCTION(f) _##f
 
 #endif
+
+using namespace RS::Format;
 
 namespace RS::IO {
 
@@ -200,7 +203,7 @@ namespace RS::IO {
 
         #else
 
-            auto wmode = to_wstring(iomode);
+            auto wmode = to_wstring(decode_string(iomode));
             errno = 0;
             auto rc = _wfopen(f.c_name(), wmode.data());
             err = errno;
@@ -466,9 +469,9 @@ namespace RS::IO {
         // Class Winio
 
         void Winio::deleter::operator()(void* fh) const noexcept {
-            sattic const auto stdin_handle = GetStdHandle(STD_INPUT_HANDLE);
-            sattic const auto stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-            sattic const auto stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
+            static const auto stdin_handle = GetStdHandle(STD_INPUT_HANDLE);
+            static const auto stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+            static const auto stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
             if (fh != INVALID_HANDLE_VALUE && fh != stdin_handle && fh != stdout_handle && fh != stderr_handle)
                 CloseHandle(fh);
         }
@@ -502,22 +505,22 @@ namespace RS::IO {
             if (m == IoMode::append) {
                 LARGE_INTEGER distance;
                 distance.QuadPart = 0;
-                SetLastError(0);
-                SetFilePointerEx(fh_, distance, nullptr, FILE_END);
+                auto rc = SetFilePointerEx(fh_, distance, nullptr, FILE_END);
                 auto err = GetLastError();
-                if (err != 0)
+                if (rc == 0)
                     throw IoError(err, f.name(), std::system_category());
             }
 
         }
 
-        Winio::Winio(const Path& f, uint32_t desired_access, uint32_t share_mode, LPSECURITY_ATTRIBUTES security_attributes,
-                uint32_t creation_disposition, uint32_t flags_and_attributes, HANDLE template_file) {
-            SetLastError(0);
-            auto rc = CreateFileW(f.c_name(), desired_access, share_mode, security_attributes,
-                creation_disposition, flags_and_attributes, template_file);
+        Winio::Winio(const Path& f, uint32_t desired_access, uint32_t share_mode, void* security_attributes,
+                uint32_t creation_disposition, uint32_t flags_and_attributes, void* template_file) {
+            auto sa = LPSECURITY_ATTRIBUTES(security_attributes);
+            auto tf = HANDLE(template_file);
+            auto rc = CreateFileW(f.c_name(), desired_access, share_mode, sa,
+                creation_disposition, flags_and_attributes, tf);
             int err = GetLastError();
-            if (err != 0)
+            if (rc == INVALID_HANDLE_VALUE)
                 throw IoError(err, f.name(), std::system_category());
             *this = Winio(rc);
         }
@@ -575,6 +578,18 @@ namespace RS::IO {
 
         Winio Winio::null() {
             return Winio(null_device, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING);
+        }
+
+        Winio Winio::std_input() {
+            return Winio(GetStdHandle(STD_INPUT_HANDLE));
+        }
+
+        Winio Winio::std_output() {
+            return Winio(GetStdHandle(STD_OUTPUT_HANDLE));
+        }
+
+        Winio Winio::std_error() {
+            return Winio(GetStdHandle(STD_ERROR_HANDLE));
         }
 
     #endif

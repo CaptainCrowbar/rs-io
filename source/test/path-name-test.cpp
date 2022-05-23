@@ -58,10 +58,9 @@ void test_rs_io_path_unicode_names() {
         std::wstring crap = {0xdc00, 0xd800};
 
         TRY(file = L"C:/foo/bar" + crap);
-        TEST_EQUAL(file.os_name(), L"C:\\foo\\bar" + crap);
+        TEST(file.os_name() == L"C:\\foo\\bar" + crap);
         TEST_THROW(file.name(), std::invalid_argument);
         TEST_THROW(file.as_url(), std::invalid_argument);
-        TEST_THROW(Path(L"C:/foo/bar" + crap), std::invalid_argument);
 
     #endif
 

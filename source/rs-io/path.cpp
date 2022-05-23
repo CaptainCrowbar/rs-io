@@ -35,6 +35,7 @@
 
 #endif
 
+using namespace RS::Format;
 using namespace RS::RE;
 using namespace std::chrono;
 using namespace std::literals;
@@ -112,7 +113,7 @@ namespace RS::IO {
             }
 
             std::string make_utf8(const std::wstring& wstr) {
-                return Format::to_utf8(Format::decode_string(wstr));
+                return to_utf8(decode_string(wstr));
             }
 
             std::string dumb_ascii_conversion(const std::wstring& wstr) {
@@ -161,7 +162,7 @@ namespace RS::IO {
             #ifdef _XOPEN_SOURCE
                 return utf8;
             #else
-                return Format::to_utf16(Format::decode_string(utf8));
+                return to_wstring(decode_string(utf8));
             #endif
         }
 
@@ -176,15 +177,15 @@ namespace RS::IO {
             make_canonical(flags);
         }
 
-    #elif
+    #else
 
         Path::Path(const std::string& file, flag flags):
-        filename_(make_utf8(file)) {
+        filename_(to_wstring(decode_string(file))) {
             make_canonical(flags);
         }
 
         Path::Path(const std::wstring& file, flag flags):
-        filename_() {
+        filename_(file) {
             make_canonical(flags);
         }
 
@@ -241,7 +242,7 @@ namespace RS::IO {
 
     Path Path::change_ext(const std::string& new_ext) const {
         if (empty() || get_root(true).size() == filename_.size())
-            throw std::invalid_argument("Can't change file extension: " + Format::quote(name()));
+            throw std::invalid_argument("Can't change file extension: " + quote(name()));
         string_type prefix = filename_;
         prefix.resize(prefix.size() - get_base_ext().second.size());
         auto suffix = make_native_string(new_ext);
@@ -910,7 +911,7 @@ namespace RS::IO {
                 dot = npos;
             }
         auto base = filename_.substr(start, dot - start);
-        std::string ext;
+        std::wstring ext;
         if (dot < filename_.size())
             ext = filename_.substr(dot);
         return {base, ext};
@@ -1021,7 +1022,7 @@ namespace RS::IO {
         #endif
         // Validate if requested
         if (!! (flags & flag::legal_name) && ! is_legal())
-            throw std::invalid_argument("Invalid file name: " + Format::quote(name()));
+            throw std::invalid_argument("Invalid file name: " + quote(name()));
     }
 
     #if defined(__APPLE__) && __MAC_OS_X_VERSION_MAX_ALLOWED < 101300
@@ -1061,7 +1062,7 @@ namespace RS::IO {
             FILETIME ft[3];
             if (! GetFileTime(fh, ft, ft + 1, ft + 2))
                 return {};
-            timepoint tp;
+            time_point tp;
             filetime_to_timepoint(ft[index], tp);
             return tp;
         }
@@ -1091,14 +1092,14 @@ namespace RS::IO {
 
     bool Path::equal::operator()(const Path& lhs, const Path& rhs) const {
         if (cmode == cmp::icase)
-            return Format::AsciiIcaseEqual()(lhs.name(), rhs.name());
+            return AsciiIcaseEqual()(lhs.name(), rhs.name());
         else
             return lhs == rhs;
     }
 
     bool Path::less::operator()(const Path& lhs, const Path& rhs) const {
         if (cmode == cmp::icase)
-            return Format::AsciiIcaseLess()(lhs.name(), rhs.name());
+            return AsciiIcaseLess()(lhs.name(), rhs.name());
         else
             return lhs < rhs;
     }
@@ -1192,7 +1193,7 @@ namespace RS::IO {
                 break;
             }
             if (impl_->leaf != dot1 && impl_->leaf != dot2
-                    && (! (impl_->flags & flag::unicode) || Format::is_valid_utf(impl_->leaf))) {
+                    && (! (impl_->flags & flag::unicode) || is_valid_utf(impl_->leaf))) {
                 impl_->current = impl_->prefix / impl_->leaf;
                 if (! skip_hidden || ! impl_->current.is_hidden())
                     break;

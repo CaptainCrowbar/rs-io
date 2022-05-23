@@ -115,13 +115,13 @@ void test_rs_io_time_system_specific_conversions() {
         int64_t ticks = 0;
         FILETIME ft1, ft2;
         system_clock::time_point tp1, tp2;
-        system_clock::duration d;
+        system_clock::duration du;
 
         ticks = epoch * freq;
         ft1 = {uint32_t(ticks), uint32_t(ticks >> 32)};
         TRY(filetime_to_timepoint(ft1, tp1));
-        d = tp1 - system_clock::from_time_t(0);
-        TEST_EQUAL(d.count(), 0);
+        du = tp1 - system_clock::from_time_t(0);
+        TEST_EQUAL(du.count(), 0);
         TRY(timepoint_to_filetime(tp1, ft2));
         TEST_EQUAL(ft2.dwHighDateTime, ft1.dwHighDateTime);
         TEST_EQUAL(ft2.dwLowDateTime, ft1.dwLowDateTime);
@@ -129,16 +129,16 @@ void test_rs_io_time_system_specific_conversions() {
         ticks += 86'400 * freq;
         ft1 = {uint32_t(ticks), uint32_t(ticks >> 32)};
         TRY(filetime_to_timepoint(ft1, tp1));
-        d = tp1 - system_clock::from_time_t(0);
-        TEST_EQUAL(duration_cast<milliseconds>(d).count(), 86'400'000);
+        du = tp1 - system_clock::from_time_t(0);
+        TEST_EQUAL(duration_cast<milliseconds>(du).count(), 86'400'000);
 
         tp1 = system_clock::from_time_t(0);
-        TRY(ft1 = timepoint_to_filetime(tp1));
+        TRY(timepoint_to_filetime(tp1, ft1));
         TRY(filetime_to_timepoint(ft1, tp2));
         TEST_EQUAL(tp2.time_since_epoch().count(), tp1.time_since_epoch().count());
 
         tp1 = system_clock::from_time_t(1'234'567'890);
-        TRY(ft1 = timepoint_to_filetime(tp1));
+        TRY(timepoint_to_filetime(tp1, ft1));
         TRY(filetime_to_timepoint(ft1, tp2));
         TEST_EQUAL(tp2.time_since_epoch().count(), tp1.time_since_epoch().count());
 

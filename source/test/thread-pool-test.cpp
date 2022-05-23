@@ -18,13 +18,13 @@ using namespace std::chrono;
 namespace {
 
     const std::string& alphabet() {
-        static const std::string str = [] {
-            std::string str;
+        static const std::string s = [] {
+            std::string t;
             for (char c = 'a'; c <= 'z'; ++c)
-                str += c;
-            return str;
+                t += c;
+            return t;
         }();
-        return str;
+        return s;
     }
 
 }

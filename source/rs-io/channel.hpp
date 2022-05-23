@@ -3,6 +3,7 @@
 #include "rs-io/time.hpp"
 #include "rs-io/utility.hpp"
 #include "rs-tl/thread.hpp"
+#include "rs-tl/time.hpp"
 #include <chrono>
 #include <condition_variable>
 #include <deque>
